@@ -55,7 +55,6 @@ function App() {
             <AIReasoningPanel targetWeights={targetWeights} />
           </div>
         </div>
-        </div>
       </div>
     </div>
   );
