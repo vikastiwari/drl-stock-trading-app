@@ -14,10 +14,10 @@ export const GlobalModal = () => {
       title: "Trading Preferences",
       desc: "Configure your risk tolerance and AI parameters",
       render: () => (
-        <div className="flex flex-col gap-6 mt-4">
+        <div className="flex flex-col gap-6 mt-4 text-[var(--text-main)]">
           <div className="flex justify-between items-center p-4 bg-[var(--bg-dark)] border border-[var(--border-subtle)] rounded-xl">
             <div>
-              <div className="text-base text-[var(--text-main)] font-medium">UI Theme</div>
+              <div className="text-base font-medium">UI Theme</div>
               <div className="text-sm text-[var(--text-muted)]">Select your preferred visual style</div>
             </div>
             <select 

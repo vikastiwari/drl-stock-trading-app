@@ -25,6 +25,10 @@ class AlternativeSentimentEngine:
         
         self.use_real_api = HAS_API_LIBS and self.alpaca_key and self.gemini_key
         
+        # 15 RPM Rate Limiting Mitigation Cache
+        self._cache = {}
+        self._cache_ttl = 15.0 # 15 seconds = 4 RPM (well under Gemini Lite 15 RPM)
+        
         if self.use_real_api:
             self.news_api = NewsClient(api_key=self.alpaca_key, secret_key=self.alpaca_secret)
             self.llm_client = genai.Client(api_key=self.gemini_key)
@@ -34,10 +38,20 @@ class AlternativeSentimentEngine:
     def compute_ticker_sentiment(self, target_ticker: str) -> dict:
         """
         Retrieves the absolute latest news for a ticker and evaluates the aggregated sentiment.
-        Falls back to mock data if API keys are missing.
+        Falls back to mock data if API keys are missing or rate limits hit.
         """
+        import time
+        current_time = time.time()
+        
+        if target_ticker in self._cache:
+            last_time, cached_data = self._cache[target_ticker]
+            if current_time - last_time < self._cache_ttl:
+                return cached_data
+                
         if not self.use_real_api:
-            return self._mock_sentiment(target_ticker)
+            data = self._mock_sentiment(target_ticker)
+            self._cache[target_ticker] = (current_time, data)
+            return data
             
         try:
             # Fetch the 5 most recent articles related to the ticker
@@ -76,14 +90,20 @@ class AlternativeSentimentEngine:
 
             structured_result: SentimentAnalysisOutput = llm_response.parsed
             
-            return {
+            final_data = {
                 "score": structured_result.sentiment_score,
                 "reasoning": structured_result.analysis_reasoning,
                 "headlines": extracted_headlines
             }
+            self._cache[target_ticker] = (current_time, final_data)
+            return final_data
+            
         except Exception as e:
-            print(f"Sentiment Engine Error: {e}")
-            return self._mock_sentiment(target_ticker)
+            print(f"Sentiment Engine Error or Rate Limit Hit: {e}")
+            # If rate limited (429), fall back to mock
+            data = self._mock_sentiment(target_ticker)
+            self._cache[target_ticker] = (current_time, data)
+            return data
 
     def _mock_sentiment(self, target_ticker: str) -> dict:
         news_pool = [

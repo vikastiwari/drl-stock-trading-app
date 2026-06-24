@@ -1,13 +1,16 @@
+version: '3.8'
+
 services:
-  greptimedb:
-    image: greptime/greptimedb:latest
-    container_name: greptimedb-standalone
+  trading-terminal:
+    build: 
+      context: .
+      dockerfile: Dockerfile
     ports:
-      - "4000:4000" # HTTP API
-      - "4001:4001" # gRPC
-      - "4002:4002" # MySQL
-      - "4003:4003" # PostgreSQL
+      - "8000:8000"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - APCA_API_KEY_ID=${APCA_API_KEY_ID}
+      - APCA_API_SECRET_KEY=${APCA_API_SECRET_KEY}
     volumes:
-      - ./greptimedb_data:/tmp/greptimedb
-    command: standalone start
+      - ./models:/app/models
     restart: unless-stopped
