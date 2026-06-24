@@ -33,12 +33,21 @@ async def generate_portfolio_updates(app_state: State) -> AsyncGenerator[str, No
     cash_balance = 10000.0
     
     while True:
-        # 1. Fetch "live" prices (mocked interval)
-        try:
-            current_prices = pipeline.get_latest_prices()
-        except Exception:
-            # Fallback if Yahoo Finance fails during testing
-            current_prices = {"AAPL": 150.0, "MSFT": 300.0}
+        # 1. Fetch "live" prices (mocked interval to prevent yfinance spam)
+        MOCK_MODE = True
+        
+        if MOCK_MODE:
+            # Add some slight randomness so the chart moves dynamically!
+            import random
+            current_prices = {
+                "AAPL": round(random.uniform(145.0, 155.0), 2),
+                "MSFT": round(random.uniform(290.0, 310.0), 2)
+            }
+        else:
+            try:
+                current_prices = pipeline.get_latest_prices()
+            except Exception:
+                current_prices = {"AAPL": 150.0, "MSFT": 300.0}
 
         # 2. Build mathematical state vector
         state_array = state_builder.build_state(current_prices, cash_balance)
@@ -59,9 +68,12 @@ async def generate_portfolio_updates(app_state: State) -> AsyncGenerator[str, No
         # (Assuming equal distribution originally for demo purposes)
         portfolio_value = cash_balance + sum(current_prices.values()) * 10
         
-        # 4. Serialize to JSON string
-        payload = f'{{"portfolio_value": {round(portfolio_value, 2)}, "target_weights": {target_weights}}}'
-        yield payload
+        import json
+        payload_dict = {
+            "portfolio_value": round(portfolio_value, 2),
+            "target_weights": target_weights
+        }
+        yield json.dumps(payload_dict)
         
         # Wait for next "tick"
         await asyncio.sleep(2.0)
