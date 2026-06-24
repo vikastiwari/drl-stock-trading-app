@@ -46,12 +46,14 @@ graph TD
     subgraph Intelligence [AI Inference Layer]
         Model[PyTorch Model]
         FinRL[FinRL-X Engine]
+        Gemini[Gemini 1.5 Lite API]
     end
 
     UI -->|HTTPS Requests| REST
     REST -->|Auth/Data| Auth
     REST -->|Read/Write| PG
-    UI <--|Unidirectional SSE Stream| SSE
-    SSE <--|Portfolio Weights| Model
+    REST -->|Business Queries| Gemini
+    SSE -->|Unidirectional SSE Stream| UI
+    Model -->|Portfolio Weights| SSE
     REST -->|Sync State| FinRL
 ```

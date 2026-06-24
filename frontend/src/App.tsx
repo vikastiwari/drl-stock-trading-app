@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Activity } from 'lucide-react';
 import { PortfolioChart } from './components/PortfolioChart';
 import { AIReasoningPanel } from './components/AIReasoningPanel';
+import { TopNav } from './components/TopNav';
 
 interface PortfolioData {
   portfolio_value: number;
@@ -29,32 +29,21 @@ function App() {
       });
     };
 
-    return () => eventSource.close();
+    return () => {
+      eventSource.close();
+    };
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-200 selection:bg-blue-500/30 font-sans pb-12">
-      {/* Top Navigation */}
-      <nav className="w-full border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Activity className="w-6 h-6 text-emerald-400" />
-            <span className="font-bold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-blue-400">
-              Retail AI Trader
-            </span>
-          </div>
-          <div className="text-xs font-mono text-slate-500 flex items-center gap-2">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            SSE LIVE
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-slate-900 text-slate-200 p-6 relative overflow-hidden font-sans pb-12">
+      {/* Background Glow Effects */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-cyan-900/30 blur-[120px] pointer-events-none"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-purple-900/30 blur-[120px] pointer-events-none"></div>
 
-      {/* Main Dashboard */}
-      <main className="max-w-7xl mx-auto px-6 mt-8">
+      <div className="max-w-7xl mx-auto relative z-10">
+        
+        <TopNav />
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Chart Area */}
           <div className="lg:col-span-2">
@@ -66,7 +55,8 @@ function App() {
             <AIReasoningPanel targetWeights={targetWeights} />
           </div>
         </div>
-      </main>
+        </div>
+      </div>
     </div>
   );
 }

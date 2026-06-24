@@ -89,7 +89,9 @@ async def stream_portfolio(state: State) -> ServerSentEvent:
 async def health_check() -> dict[str, str]:
     return {"status": "ok", "architecture": "litestar_sse_pytorch"}
 
+from backend.api.chat import chat_with_gemini
+
 app = Litestar(
-    route_handlers=[stream_portfolio, health_check],
+    route_handlers=[stream_portfolio, health_check, chat_with_gemini],
     on_startup=[load_pytorch_model]
 )
