@@ -1,34 +1,56 @@
-import { useState, useEffect } from 'react';
-import { PortfolioChart } from './components/PortfolioChart';
-import { AIReasoningPanel } from './components/AIReasoningPanel';
+import { useState, useEffect, useRef } from 'react';
 import { TopNav } from './components/TopNav';
 import { GlobalModal } from './components/GlobalModal';
 import { StoreProvider } from './store';
+import { DashboardLayout } from './components/DashboardLayout';
 
-interface PortfolioData {
+interface TerminalState {
+  event_type: string;
   portfolio_value: number;
-  target_weights: { [key: string]: number };
+  portfolio_allocations: { [key: string]: number };
+  asset_sentiment: {
+    score: number;
+    reasoning: string;
+    headlines: string[];
+  };
 }
 
 function AppContent() {
   const [targetWeights, setTargetWeights] = useState<{ [key: string]: number } | null>(null);
   const [chartDataPoint, setChartDataPoint] = useState<{ time: number; value: number } | null>(null);
+  const [sentimentPayload, setSentimentPayload] = useState<any>(null);
+  const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    const eventSource = new EventSource('/api/stream/portfolio');
-    
-    eventSource.onmessage = (event) => {
-      const data: PortfolioData = JSON.parse(event.data);
-      setTargetWeights(data.target_weights);
-      const currentTimeSeconds = Math.floor(Date.now() / 1000);
-      setChartDataPoint({
-        time: currentTimeSeconds,
-        value: data.portfolio_value
-      });
+    // Connect to the new Bidirectional WebSocket
+    const ws = new WebSocket('ws://localhost:8000/ws/terminal-feed');
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      console.log('Connected to Institutional Terminal Feed');
+      // Send the initial configuration payload
+      ws.send(JSON.stringify({ target_asset: 'AAPL' }));
+    };
+
+    ws.onmessage = (event) => {
+      const data: TerminalState = JSON.parse(event.data);
+      
+      if (data.event_type === 'TERMINAL_STATE_UPDATE') {
+        setTargetWeights(data.portfolio_allocations);
+        setSentimentPayload(data.asset_sentiment);
+        
+        const currentTimeSeconds = Math.floor(Date.now() / 1000);
+        setChartDataPoint({
+          time: currentTimeSeconds,
+          value: data.portfolio_value
+        });
+      }
     };
 
     return () => {
-      eventSource.close();
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.close();
+      }
     };
   }, []);
 
@@ -37,15 +59,14 @@ function AppContent() {
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-cyan-900/30 blur-[120px] pointer-events-none"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-purple-900/30 blur-[120px] pointer-events-none"></div>
 
-      <div className="max-w-7xl mx-auto relative z-10">
+      <div className="max-w-[1600px] mx-auto relative z-10 flex flex-col gap-6">
         <TopNav />
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <PortfolioChart dataPoint={chartDataPoint} />
-          </div>
-          <div className="lg:col-span-1">
-            <AIReasoningPanel targetWeights={targetWeights} />
-          </div>
+        <div className="flex-1 min-h-[800px]">
+          <DashboardLayout 
+            chartDataPoint={chartDataPoint} 
+            targetWeights={targetWeights} 
+            sentimentPayload={sentimentPayload} 
+          />
         </div>
       </div>
       
