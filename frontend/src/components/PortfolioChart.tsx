@@ -61,8 +61,8 @@ export function PortfolioChart({ dataPoint }: PortfolioChartProps) {
   }, [dataPoint]);
 
   return (
-    <div className="w-full h-96 rounded-xl border border-slate-700/50 bg-slate-800/30 overflow-hidden backdrop-blur-md p-4">
-      <h3 className="text-sm font-semibold text-slate-400 mb-2 uppercase tracking-wider">Live Portfolio Valuation</h3>
+    <div className="w-full h-96 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] overflow-hidden backdrop-blur-md p-4">
+      <h3 className="text-sm font-semibold text-[var(--text-muted)] mb-2 uppercase tracking-wider">Live Portfolio Valuation</h3>
       <div ref={chartContainerRef} className="w-full h-[calc(100%-2rem)]" />
     </div>
   );

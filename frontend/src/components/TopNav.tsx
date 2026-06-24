@@ -74,11 +74,11 @@ export function TopNav() {
         
         {/* Gemini Lite Search Bar */}
         <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
           <input 
             type="text" 
             placeholder="Ask Gemini Lite about trading..." 
-            className="bg-slate-800/50 border border-slate-700 rounded-full py-2 pl-10 pr-10 text-sm text-slate-200 focus:outline-none focus:border-cyan-500/50 transition-all duration-300 w-64 focus:w-96"
+            className="bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-full py-2 pl-10 pr-10 text-sm text-[var(--text-main)] focus:outline-none focus:border-[var(--accent-cyan)] transition-all duration-300 w-64 focus:w-96"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={handleSearchSubmit}
@@ -97,11 +97,11 @@ export function TopNav() {
                   <h3 className="text-sm text-cyan-400 flex items-center gap-2">
                     <Sparkles size={16} /> Gemini 1.5 Lite
                   </h3>
-                  <button onClick={() => setIsSearching(false)} className="text-slate-400 hover:text-white transition-colors">
+                  <button onClick={() => setIsSearching(false)} className="text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors">
                     <X size={16} />
                   </button>
                 </div>
-                <div className="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap">
+                <div className="text-sm text-[var(--text-main)] leading-relaxed whitespace-pre-wrap">
                   {geminiResponse}
                   {geminiResponse !== 'Thinking...' && <span className="animate-pulse ml-1 text-cyan-400">|</span>}
                 </div>
@@ -118,9 +118,9 @@ export function TopNav() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setIsAlertsOpen(!isAlertsOpen)}
-              className={`p-2 rounded-full transition-colors relative ${isAlertsOpen ? 'bg-slate-700/50' : 'hover:bg-slate-800/50'}`}
+              className={`p-2 rounded-full transition-colors relative ${isAlertsOpen ? 'bg-[var(--bg-card-hover)]' : 'hover:bg-[var(--bg-card)]'}`}
             >
-              <Bell size={20} className="text-slate-400" />
+              <Bell size={20} className="text-[var(--text-muted)]" />
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-pink-500 rounded-full shadow-[0_0_8px_rgba(236,72,153,0.8)]"></span>
             </motion.button>
 
@@ -128,9 +128,9 @@ export function TopNav() {
               {isAlertsOpen && (
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
-                  className="glass-panel absolute top-12 right-0 w-72 rounded-xl border border-slate-700/50 overflow-hidden"
+                  className="glass-panel absolute top-12 right-0 w-72 rounded-xl overflow-hidden"
                 >
-                  <h4 className="p-3 border-b border-slate-700/50 m-0 font-medium text-sm text-slate-200">System Alerts</h4>
+                  <h4 className="p-3 border-b border-[var(--border-subtle)] m-0 font-medium text-sm text-[var(--text-main)]">System Alerts</h4>
                   <div className="p-2">
                     <DropdownItem icon={<AlertCircle className="text-pink-500" size={16} />} title="High Volatility Detected" desc="AAPL price swings exceed 5% threshold." onClick={() => { setIsAlertsOpen(false); openModal('alerts'); }} />
                     <DropdownItem icon={<CheckCircle2 className="text-emerald-500" size={16} />} title="Model Sync Complete" desc="FinRL target weights synced successfully." onClick={() => { setIsAlertsOpen(false); openModal('alerts'); }} />
@@ -146,15 +146,15 @@ export function TopNav() {
               whileHover={{ scale: 1.05, rotate: 15 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-              className={`p-2 rounded-full transition-colors ${isSettingsOpen ? 'bg-slate-700/50' : 'hover:bg-slate-800/50'}`}
+              className={`p-2 rounded-full transition-colors ${isSettingsOpen ? 'bg-[var(--bg-card-hover)]' : 'hover:bg-[var(--bg-card)]'}`}
             >
-              <Settings size={20} className="text-slate-400" />
+              <Settings size={20} className="text-[var(--text-muted)]" />
             </motion.button>
             <AnimatePresence>
               {isSettingsOpen && (
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
-                  className="glass-panel absolute top-12 right-0 w-56 rounded-xl border border-slate-700/50 overflow-hidden"
+                  className="glass-panel absolute top-12 right-0 w-56 rounded-xl overflow-hidden"
                 >
                   <div className="p-2">
                     <DropdownItem icon={<Settings size={16} />} title="Trading Preferences" desc="Risk tolerance & sizing" onClick={() => { setIsSettingsOpen(false); openModal('preferences'); }} />
@@ -165,14 +165,14 @@ export function TopNav() {
             </AnimatePresence>
           </div>
 
-          <div className="w-[1px] h-6 bg-slate-700"></div>
+          <div className="w-[1px] h-6 bg-[var(--border-subtle)]"></div>
 
           {/* Admin Profile Dropdown */}
           <div className="relative">
             <motion.button 
               onClick={() => setIsAdminOpen(!isAdminOpen)}
               whileHover={{ scale: 1.02 }}
-              className="flex items-center gap-2 bg-transparent border-none cursor-pointer text-slate-200 hover:text-white transition-colors"
+              className="flex items-center gap-2 bg-transparent border-none cursor-pointer text-[var(--text-main)] transition-colors"
             >
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center shadow-[0_0_10px_rgba(168,85,247,0.4)]">
                 <User size={16} className="text-white" />
@@ -183,12 +183,12 @@ export function TopNav() {
               {isAdminOpen && (
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
-                  className="glass-panel absolute top-12 right-0 min-w-[200px] rounded-xl border border-slate-700/50 overflow-hidden"
+                  className="glass-panel absolute top-12 right-0 min-w-[200px] rounded-xl overflow-hidden"
                 >
                   <div className="p-2">
                     <DropdownItem icon={<User size={16} />} title="My Profile" onClick={() => { setIsAdminOpen(false); openModal('profile'); }} />
                     <DropdownItem icon={<CreditCard size={16} />} title="API Keys" onClick={() => { setIsAdminOpen(false); openModal('apikeys'); }} />
-                    <div className="h-[1px] bg-slate-700/50 my-1"></div>
+                    <div className="h-[1px] bg-[var(--border-subtle)] my-1"></div>
                     <DropdownItem icon={<LogOut size={16} className="text-pink-500" />} title="Logout" titleColor="text-pink-500" onClick={() => setIsAdminOpen(false)} />
                   </div>
                 </motion.div>
@@ -201,13 +201,13 @@ export function TopNav() {
   );
 }
 
-function DropdownItem({ icon, title, desc, titleColor = "text-slate-200", onClick }: { icon: React.ReactNode, title: string, desc?: string, titleColor?: string, onClick?: () => void }) {
+function DropdownItem({ icon, title, desc, titleColor = "text-[var(--text-main)]", onClick }: { icon: React.ReactNode, title: string, desc?: string, titleColor?: string, onClick?: () => void }) {
   return (
     <div onClick={onClick} className="flex items-start gap-3 p-3 cursor-pointer rounded-lg hover:bg-[var(--bg-card-hover)] transition-colors">
-      <div className="mt-0.5 text-slate-400">{icon}</div>
+      <div className="mt-0.5 text-[var(--text-muted)]">{icon}</div>
       <div>
         <div className={`text-sm font-medium ${titleColor} ${desc ? 'mb-1' : 'mb-0'}`}>{title}</div>
-        {desc && <div className="text-xs text-slate-400">{desc}</div>}
+        {desc && <div className="text-xs text-[var(--text-muted)]">{desc}</div>}
       </div>
     </div>
   );
