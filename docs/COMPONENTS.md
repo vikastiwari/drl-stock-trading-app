@@ -1,6 +1,6 @@
 # Component Structure: DRL Stock Trading App
 
-This document outlines the React component hierarchy and frontend architecture.
+This document outlines the React component hierarchy and Web Worker offloading architecture.
 
 ## 1. Directory Structure (Frontend)
 ```
@@ -11,44 +11,41 @@ src/
 │   │   ├── Topbar.jsx
 │   │   └── MainLayout.jsx
 │   ├── dashboard/
-│   │   ├── ChartWidget.jsx
+│   │   ├── SciChartWidget.jsx (WebGL Canvas)
 │   │   ├── OrderEntryPanel.jsx
 │   │   └── PositionsTable.jsx
 │   ├── ai/
 │   │   ├── DRLInsightsPanel.jsx
-│   │   ├── StateRadarChart.jsx
 │   │   └── AutoTradeToggle.jsx
+│   ├── telemetry/
+│   │   └── LatencyHistogramPanel.jsx
 │   └── shared/
 │       ├── NeonButton.jsx
-│       ├── StatCard.jsx
 │       └── LivePriceTicker.jsx
+├── workers/
+│   └── WebTransportWorker.js (Handles QUIC Datagrams & SharedArrayBuffer)
 ├── store/
 │   ├── usePortfolioStore.js (Zustand)
-│   ├── useMarketDataStore.js (Zustand)
 │   └── useAIStore.js (Zustand)
-├── hooks/
-│   └── useMarketWebsocket.js
 └── api/
     └── restClient.js
 ```
 
-## 2. Key Components
+## 2. Key Architectural Components
 
-### `ChartWidget`
-- **Responsibility**: Wraps `lightweight-charts` and renders the real-time candlestick data.
-- **State**: Listens to `useMarketDataStore` for appending new price ticks.
+### `WebTransportWorker.js`
+- **Responsibility**: Establishes the HTTP/3 QUIC connection to the Rust backend.
+- **Logic**: Ingests unreliable datagrams (price ticks), deserializes the binary payload, and writes it directly into a `SharedArrayBuffer`. 
+- **Benefit**: Completely unblocks the main React UI thread from network serialization overhead.
 
-### `DRLInsightsPanel`
-- **Responsibility**: Displays the AI's internal state and recommended action.
-- **State**: Consumes data from `useAIStore` which is updated via the `/ws/ai-signals` WebSocket.
+### `SciChartWidget`
+- **Responsibility**: Wraps `scichart` to render real-time WebAssembly-accelerated candlestick data.
+- **Logic**: Hooks into the browser's native `requestAnimationFrame`. On each frame, it reads the latest values from the `SharedArrayBuffer` and paints the WebGL context directly, achieving 60fps under extreme load.
 
-### `OrderEntryPanel`
-- **Responsibility**: Provides the UI for manual Buy/Sell orders.
-- **State**: Submits orders via REST API (`POST /api/orders`), optimistic UI update on `usePortfolioStore`.
+### `LatencyHistogramPanel`
+- **Responsibility**: Renders the microsecond latency metrics queried from GreptimeDB.
+- **State**: Fetches OpenTelemetry aggregates via reliable WebTransport streams.
 
 ### `usePortfolioStore` (Zustand)
 - Stores `cashBalance`, `equity`, and `positions`.
-- Exposes actions like `fetchPortfolio()` and `updateBalance(newBalance)`.
-
-## 3. Reusability
-- We will reuse the glassmorphic container CSS classes, Lucide-React icon patterns, and layout gridding from `ai-studio-dashboard` to ensure a consistent, premium feel without rewriting boilerplate UI code.
+- Exposes actions like `fetchPortfolio()` and `updateBalance(newBalance)`. Updates are received via reliable WebTransport multiplexed streams.

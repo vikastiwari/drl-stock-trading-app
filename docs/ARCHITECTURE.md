@@ -1,44 +1,40 @@
-# Architecture: DRL Stock Trading App
+# Enterprise Architecture: DRL Stock Trading App
 
-This document describes the high-level architecture of the system.
+This document describes the high-performance, ultra-low-latency architecture of the system, engineered to institutional quantitative trading standards.
 
 ## 1. System Overview
-The application follows a standard three-tier architecture with real-time bidirectional communication via WebSockets for low-latency market data and trade executions.
+The application utilizes a decoupled, hardware-accelerated architecture to achieve microsecond latency from market data ingestion to DRL inference and UI rendering.
 
 ```mermaid
 graph TD
-    UI[Frontend: React + Vite] -->|REST / WebSockets| API[Backend: FastAPI]
-    API -->|Read/Write| DB[(PostgreSQL)]
-    API -->|Cache / PubSub| Redis[(Redis)]
-    API -->|Fetch Live Data| Market[Alpaca/Finnhub API]
-    API -->|Predict Action| DRL[DRL Engine: PyTorch]
+    Market[Market Data Provider] -->|UDP / WebSockets| Ingestor[Rust Ingestion Engine]
+    Ingestor -->|Aeron IPC Shared Memory| Disruptor[LMAX Disruptor Ring Buffer]
+    
+    Disruptor -->|Batching| Triton[NVIDIA Triton Inference Server]
+    Triton -->|TensorRT / CUDA| DRL[FinRL Decision Transformer]
+    DRL -->|Action Output| Disruptor
+    
+    Disruptor -->|Order Routing| Alpaca[Alpaca Execution API]
+    Disruptor -->|WebTransport HTTP/3| Frontend[React + WebWorker]
+    
+    Ingestor -->|Ticks & OpenTelemetry Spans| GreptimeDB[(GreptimeDB)]
 ```
 
-## 2. Frontend Layer (React + Vite)
-- **Framework**: React 18, Vite for fast HMR.
-- **Styling**: TailwindCSS with custom design tokens for a premium, dark-mode financial aesthetic.
-- **State Management**: Zustand for global state (Wallet, Portfolio), React Query for REST fetching, and custom WebSocket hooks for real-time streams.
-- **Charting**: Lightweight Charts by TradingView for rendering OHLC (Open-High-Low-Close) candlesticks seamlessly.
+## 2. Real-Time Data Streaming & IPC Backbone
+- **Ingestion**: Written in **Rust** to guarantee memory safety without garbage collection pauses.
+- **Message Bus**: **Aeron** is used for inter-process communication (IPC) via shared memory, completely bypassing the OS network stack.
+- **Concurrency**: An **LMAX Disruptor** ring buffer acts as the central order book and event sequencer, utilizing hardware-level memory barriers to achieve zero-lock, zero-allocation messaging.
 
-## 3. Backend Layer (Python FastAPI)
-- **Framework**: FastAPI (Asynchronous by default, making it ideal for WebSockets and ML integration).
-- **Core Services**:
-  - `MarketDataService`: Connects to external APIs, normalizes data, and pushes it to Redis Pub/Sub.
-  - `OrderManagementService`: Validates user balance, executes virtual trades, and calculates real-time PnL.
-  - `DRLInferenceService`: Loads the trained PyTorch model, normalizes incoming market data into a state vector, and runs model inference to produce an action (Buy/Sell/Hold).
-- **WebSockets**: A dedicated `/ws/market` and `/ws/portfolio` endpoint to stream data to connected clients.
+## 3. Time-Series & Observability Data Store
+- **Database**: **GreptimeDB** (written in Rust, LSM-Tree architecture).
+- **Purpose**: A unified multi-modal database replacing PostgreSQL/Redis. It simultaneously ingests high-frequency market ticks (Metrics) and nanosecond-resolution execution timestamps (OpenTelemetry Traces) for latency profiling.
 
-## 4. Data Layer (PostgreSQL & Redis)
-- **PostgreSQL**: The source of truth for persistent data.
-  - `users`: ID, username, password hash.
-  - `portfolios`: user_id, cash_balance, total_equity.
-  - `positions`: user_id, symbol, quantity, average_price.
-  - `transactions`: user_id, symbol, type (BUY/SELL), quantity, price, timestamp.
-- **Redis**: Used as an in-memory message broker. Market data comes in from Alpaca -> Python processes it -> Publishes to Redis -> FastAPI WebSocket endpoints consume from Redis and push to the React UI.
+## 4. DRL Engine (PyTorch + Triton)
+- **Model Architecture**: **Decision Transformer (FinRL-DT)** utilizing a LoRA-adapted Large Language Model (GPT-2) for conditional sequence modeling.
+- **Reward Shaping**: The agent optimizes for the **Differential Sharpe Ratio**, strictly penalizing transaction friction and volatility.
+- **Inference**: Deployed on the **NVIDIA Triton Inference Server**. The PyTorch model is compiled to a **TensorRT** engine to enable dynamic batching and microsecond GPU execution.
 
-## 5. DRL Engine (PyTorch + FinRL)
-- **Training Environment**: An offline Jupyter Notebook or Python script that uses FinRL (Financial Reinforcement Learning) to train an agent.
-- **Algorithm**: PPO (Proximal Policy Optimization) or A2C.
-- **State Space**: Current price, MACD, RSI, CCI, ADX, current shares held, available balance.
-- **Action Space**: Continuous action `[-1, 1]`, where `< 0` implies selling up to `H` shares, and `> 0` implies buying up to `H` shares.
-- **Reward Function**: Change in total portfolio value.
+## 5. Client-Server Transport & Frontend
+- **Network Transport**: **WebTransport over HTTP/3 (QUIC)**. Market noise (ticks) is streamed via unreliable datagrams to eliminate Head-of-Line (HoL) blocking. Financial state (portfolio balances) uses reliable streams.
+- **Frontend Framework**: React 18 + Vite.
+- **Rendering Engine**: **SciChart.js** (WebAssembly/WebGL). Data parsing occurs inside a dedicated Web Worker that writes directly to a `SharedArrayBuffer`, synced to the UI via `requestAnimationFrame` for a flawless 60fps experience.

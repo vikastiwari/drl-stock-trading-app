@@ -1,0 +1,38 @@
+# Rust
+/target/
+**/*.rs.bk
+
+# Node / React
+node_modules/
+dist/
+build/
+.env
+.env.local
+.env.*.local
+
+# Python / AI
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+.pytest_cache/
+.coverage
+htmlcov/
+*.onnx
+*.trt
+*.engine
+
+# IDEs and OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Logs and Databases
+*.log
+/data/
+/greptimedb_data/
