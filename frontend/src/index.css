@@ -2,6 +2,56 @@
 @tailwind components;
 @tailwind utilities;
 
+:root, :root[data-theme="dark"] {
+  --bg-dark: #0f172a; /* slate-900 */
+  --bg-card: rgba(30, 41, 59, 0.7); /* slate-800 */
+  --bg-card-hover: rgba(51, 65, 85, 0.85); /* slate-700 */
+  --accent-cyan: #22d3ee;
+  --text-main: #e2e8f0;
+  --text-muted: #94a3b8;
+  --border-subtle: rgba(255, 255, 255, 0.1);
+  --border-active: rgba(34, 211, 238, 0.5);
+}
+
+:root[data-theme="light"] {
+  --bg-dark: #f8fafc;
+  --bg-card: rgba(255, 255, 255, 0.9);
+  --bg-card-hover: rgba(241, 245, 249, 0.95);
+  --accent-cyan: #0284c7;
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --border-subtle: rgba(0, 0, 0, 0.1);
+  --border-active: rgba(2, 132, 199, 0.5);
+}
+
+:root[data-theme="amoled"] {
+  --bg-dark: #000000;
+  --bg-card: rgba(10, 10, 10, 0.8);
+  --bg-card-hover: rgba(20, 20, 20, 0.9);
+  --accent-cyan: #00e5ff;
+  --text-main: #ffffff;
+  --text-muted: #757575;
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-active: rgba(0, 229, 255, 0.3);
+}
+
+:root[data-theme="cyberpunk"] {
+  --bg-dark: #0f0a1c;
+  --bg-card: rgba(25, 10, 35, 0.7);
+  --bg-card-hover: rgba(35, 15, 50, 0.85);
+  --accent-cyan: #00ff9d;
+  --text-main: #e0d0ff;
+  --text-muted: #8b6bba;
+  --border-subtle: rgba(255, 0, 229, 0.2);
+  --border-active: rgba(0, 255, 157, 0.6);
+}
+
+body {
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
 @layer components {
   .glass-panel {
     @apply bg-slate-900/60 backdrop-blur-xl border border-slate-700/50 shadow-xl;

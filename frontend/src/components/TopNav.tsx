@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Search, Bell, Settings, User, Sparkles, X, LogOut, CreditCard, Activity, AlertCircle, CheckCircle2, Menu } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useStore } from '../store';
 
 export function TopNav() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -10,6 +11,7 @@ export function TopNav() {
   const [isAlertsOpen, setIsAlertsOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const { openModal } = useStore();
 
   const navRef = useRef<HTMLDivElement>(null);
 
@@ -130,8 +132,8 @@ export function TopNav() {
                 >
                   <h4 className="p-3 border-b border-slate-700/50 m-0 font-medium text-sm text-slate-200">System Alerts</h4>
                   <div className="p-2">
-                    <DropdownItem icon={<AlertCircle className="text-pink-500" size={16} />} title="High Volatility Detected" desc="AAPL price swings exceed 5% threshold." onClick={() => setIsAlertsOpen(false)} />
-                    <DropdownItem icon={<CheckCircle2 className="text-emerald-500" size={16} />} title="Model Sync Complete" desc="FinRL target weights synced successfully." onClick={() => setIsAlertsOpen(false)} />
+                    <DropdownItem icon={<AlertCircle className="text-pink-500" size={16} />} title="High Volatility Detected" desc="AAPL price swings exceed 5% threshold." onClick={() => { setIsAlertsOpen(false); openModal('alerts'); }} />
+                    <DropdownItem icon={<CheckCircle2 className="text-emerald-500" size={16} />} title="Model Sync Complete" desc="FinRL target weights synced successfully." onClick={() => { setIsAlertsOpen(false); openModal('alerts'); }} />
                   </div>
                 </motion.div>
               )}
@@ -155,8 +157,8 @@ export function TopNav() {
                   className="glass-panel absolute top-12 right-0 w-56 rounded-xl border border-slate-700/50 overflow-hidden"
                 >
                   <div className="p-2">
-                    <DropdownItem icon={<Settings size={16} />} title="Trading Preferences" desc="Risk tolerance & sizing" onClick={() => setIsSettingsOpen(false)} />
-                    <DropdownItem icon={<Activity size={16} />} title="UI Theme" desc="Dark (Glassmorphic) Active" onClick={() => setIsSettingsOpen(false)} />
+                    <DropdownItem icon={<Settings size={16} />} title="Trading Preferences" desc="Risk tolerance & sizing" onClick={() => { setIsSettingsOpen(false); openModal('preferences'); }} />
+                    <DropdownItem icon={<Activity size={16} />} title="UI Theme" desc="Dark (Glassmorphic) Active" onClick={() => { setIsSettingsOpen(false); openModal('preferences'); }} />
                   </div>
                 </motion.div>
               )}
@@ -184,8 +186,8 @@ export function TopNav() {
                   className="glass-panel absolute top-12 right-0 min-w-[200px] rounded-xl border border-slate-700/50 overflow-hidden"
                 >
                   <div className="p-2">
-                    <DropdownItem icon={<User size={16} />} title="My Profile" onClick={() => setIsAdminOpen(false)} />
-                    <DropdownItem icon={<CreditCard size={16} />} title="API Keys" onClick={() => setIsAdminOpen(false)} />
+                    <DropdownItem icon={<User size={16} />} title="My Profile" onClick={() => { setIsAdminOpen(false); openModal('profile'); }} />
+                    <DropdownItem icon={<CreditCard size={16} />} title="API Keys" onClick={() => { setIsAdminOpen(false); openModal('apikeys'); }} />
                     <div className="h-[1px] bg-slate-700/50 my-1"></div>
                     <DropdownItem icon={<LogOut size={16} className="text-pink-500" />} title="Logout" titleColor="text-pink-500" onClick={() => setIsAdminOpen(false)} />
                   </div>
@@ -200,13 +202,8 @@ export function TopNav() {
 }
 
 function DropdownItem({ icon, title, desc, titleColor = "text-slate-200", onClick }: { icon: React.ReactNode, title: string, desc?: string, titleColor?: string, onClick?: () => void }) {
-  const handleClick = () => {
-    alert(`Coming Soon: ${title} Module!`);
-    if (onClick) onClick();
-  };
-
   return (
-    <div onClick={handleClick} className="flex items-start gap-3 p-3 cursor-pointer rounded-lg hover:bg-slate-700/50 transition-colors">
+    <div onClick={onClick} className="flex items-start gap-3 p-3 cursor-pointer rounded-lg hover:bg-[var(--bg-card-hover)] transition-colors">
       <div className="mt-0.5 text-slate-400">{icon}</div>
       <div>
         <div className={`text-sm font-medium ${titleColor} ${desc ? 'mb-1' : 'mb-0'}`}>{title}</div>
