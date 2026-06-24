@@ -1,40 +1,57 @@
-# Enterprise Architecture: DRL Stock Trading App
+# System Architecture: DRL Stock Trading App
 
-This document describes the high-performance, ultra-low-latency architecture of the system, engineered to institutional quantitative trading standards.
+This application is built exclusively for Retail AI Trading, utilizing state-of-the-art Python and React ecosystems.
 
-## 1. System Overview
-The application utilizes a decoupled, hardware-accelerated architecture to achieve microsecond latency from market data ingestion to DRL inference and UI rendering.
+## Core Components
+
+### 1. Python Litestar Backend
+- **Framework**: `Litestar` (Chosen for `msgspec` JSON serialization speed and enterprise plugins).
+- **Responsibility**: In-memory PyTorch inference, Alpaca/Yahoo data ingestion, and orchestrating Server-Sent Events (SSE).
+- **Streaming**: Unidirectional SSE (`/api/stream/portfolio`) pushes portfolio weights and prices to the client without TCP Head-of-Line blocking.
+
+### 2. DRL & AI Engine
+- **Framework**: `FinRL-X` and `PyTorch`
+- **Agent**: Proximal Policy Optimization (PPO) or Elastic Decision Transformers (EDT).
+- **State Vector**: Combines technical indicators, Zero-Shot Time-Series Foundation Models (e.g. TimesFM), and FinGPT financial news sentiment.
+- **Inference**: Loaded globally in Litestar's `on_startup` hook.
+
+### 3. PostgreSQL Database (Supabase)
+- **Role**: Relational store for users, portfolio history, and raw OHLCV ticks.
+- **Features**: Row Level Security (RLS) and built-in authentication ensuring tenant isolation.
+
+### 4. React Vite Frontend
+- **Framework**: React 18, Vite, TailwindCSS, Framer Motion.
+- **Charting**: `TradingView Lightweight Charts` utilizing HTML5 Canvas for stutter-free 60fps rendering of large datasets.
+- **Data Fetching**: Native `EventSource` API connecting to Litestar's SSE endpoints.
+
+## System Diagram
 
 ```mermaid
 graph TD
-    Market[Market Data Provider] -->|UDP / WebSockets| Ingestor[Rust Ingestion Engine]
-    Ingestor -->|Aeron IPC Shared Memory| Disruptor[LMAX Disruptor Ring Buffer]
-    
-    Disruptor -->|Batching| Triton[NVIDIA Triton Inference Server]
-    Triton -->|TensorRT / CUDA| DRL[FinRL Decision Transformer]
-    DRL -->|Action Output| Disruptor
-    
-    Disruptor -->|Order Routing| Alpaca[Alpaca Execution API]
-    Disruptor -->|WebTransport HTTP/3| Frontend[React + WebWorker]
-    
-    Ingestor -->|Ticks & OpenTelemetry Spans| GreptimeDB[(GreptimeDB)]
+    subgraph Frontend [React + Vite SPA]
+        UI[Glassmorphic UI]
+        Chart[TradingView Charts]
+    end
+
+    subgraph Streaming [Litestar API Gateway]
+        SSE[Server-Sent Events]
+        REST[Litestar REST Router]
+    end
+
+    subgraph Data [Supabase]
+        PG[(PostgreSQL + RLS)]
+        Auth[Auth & JWT]
+    end
+
+    subgraph Intelligence [AI Inference Layer]
+        Model[PyTorch Model]
+        FinRL[FinRL-X Engine]
+    end
+
+    UI -->|HTTPS Requests| REST
+    REST -->|Auth/Data| Auth
+    REST -->|Read/Write| PG
+    UI <--|Unidirectional SSE Stream| SSE
+    SSE <--|Portfolio Weights| Model
+    REST -->|Sync State| FinRL
 ```
-
-## 2. Real-Time Data Streaming & IPC Backbone
-- **Ingestion**: Written in **Rust** to guarantee memory safety without garbage collection pauses.
-- **Message Bus**: **Aeron** is used for inter-process communication (IPC) via shared memory, completely bypassing the OS network stack.
-- **Concurrency**: An **LMAX Disruptor** ring buffer acts as the central order book and event sequencer, utilizing hardware-level memory barriers to achieve zero-lock, zero-allocation messaging.
-
-## 3. Time-Series & Observability Data Store
-- **Database**: **GreptimeDB** (written in Rust, LSM-Tree architecture).
-- **Purpose**: A unified multi-modal database replacing PostgreSQL/Redis. It simultaneously ingests high-frequency market ticks (Metrics) and nanosecond-resolution execution timestamps (OpenTelemetry Traces) for latency profiling.
-
-## 4. DRL Engine (PyTorch + Triton)
-- **Model Architecture**: **Decision Transformer (FinRL-DT)** utilizing a LoRA-adapted Large Language Model (GPT-2) for conditional sequence modeling.
-- **Reward Shaping**: The agent optimizes for the **Differential Sharpe Ratio**, strictly penalizing transaction friction and volatility.
-- **Inference**: Deployed on the **NVIDIA Triton Inference Server**. The PyTorch model is compiled to a **TensorRT** engine to enable dynamic batching and microsecond GPU execution.
-
-## 5. Client-Server Transport & Frontend
-- **Network Transport**: **WebTransport over HTTP/3 (QUIC)**. Market noise (ticks) is streamed via unreliable datagrams to eliminate Head-of-Line (HoL) blocking. Financial state (portfolio balances) uses reliable streams.
-- **Frontend Framework**: React 18 + Vite.
-- **Rendering Engine**: **SciChart.js** (WebAssembly/WebGL). Data parsing occurs inside a dedicated Web Worker that writes directly to a `SharedArrayBuffer`, synced to the UI via `requestAnimationFrame` for a flawless 60fps experience.

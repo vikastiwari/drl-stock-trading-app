@@ -1,0 +1,13 @@
+services:
+  greptimedb:
+    image: greptime/greptimedb:latest
+    container_name: greptimedb-standalone
+    ports:
+      - "4000:4000" # HTTP API
+      - "4001:4001" # gRPC
+      - "4002:4002" # MySQL
+      - "4003:4003" # PostgreSQL
+    volumes:
+      - ./greptimedb_data:/tmp/greptimedb
+    command: standalone start
+    restart: unless-stopped
