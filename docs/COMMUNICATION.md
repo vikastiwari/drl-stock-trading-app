@@ -1,31 +1,29 @@
 # Communication Strategy: DRL Stock Trading App
 
-This document details the ultra-low-latency data exchange protocols between the Frontend, the Rust Backend, and Triton.
+This document details the real-time data exchange protocols between the React Frontend, the Litestar Backend, and the PyTorch Engine.
 
-## 1. Client-Server Transport (WebTransport HTTP/3)
-We utilize WebTransport over QUIC to completely eliminate TCP Head-of-Line blocking.
+## 1. Client-Server Transport (Server-Sent Events)
+We utilize **Server-Sent Events (SSE)** to provide a fluid, unidirectional stream of portfolio data to the React client.
 
-### Unreliable Datagrams (The Hot Path)
-- **Stream**: Market Ticks & Order Book Updates.
-- **Protocol**: QUIC Unreliable Datagrams.
-- **Payload**: Binary serialized (e.g., Protobuf or custom C-struct packing).
-- **Behavior**: If a packet drops, it is ignored. The frontend only cares about the absolute latest price. The Web Worker processes these directly into a `SharedArrayBuffer`.
+### Unidirectional Data Streaming (The Hot Path)
+- **Endpoint**: `/api/stream/portfolio`
+- **Protocol**: HTTP/1.1 or HTTP/2 Server-Sent Events.
+- **Payload**: JSON format via `msgspec` serialization.
+- **Behavior**: The backend maintains an open connection and pushes target weights and portfolio balances every few seconds. The React client listens via the native `EventSource` API, triggering state updates without polling overhead.
 
-### Reliable Multiplexed Streams (State Management)
-- **Stream**: Portfolio Balances, Trade Execution Confirmations, Authentication.
-- **Protocol**: QUIC Reliable Streams (or gRPC-Web fallback).
-- **Payload**: JSON or Protobuf.
-- **Behavior**: Guaranteed, in-order delivery to ensure the virtual wallet and positions table never desynchronize.
+### Business Queries & LLM Interaction
+- **Endpoint**: `/api/chat`
+- **Protocol**: Standard REST `POST`.
+- **Payload**: JSON.
+- **Behavior**: The frontend sends queries to the Gemini 1.5 Lite API. The Litestar backend safely wraps this interaction, maintaining the API Key securely on the server.
 
 ## 2. Internal Inter-Process Communication (IPC)
 
-### Rust Ingestor <-> LMAX Disruptor
-- Market data ingested from external APIs is placed onto the Disruptor ring buffer using lock-free, atomic operations.
+### Litestar <-> PyTorch Inference Engine
+- **Strategy**: In-memory execution.
+- **Logic**: The PyTorch model is loaded globally into Litestar's `app.state` during the `on_startup` hook.
+- **Non-blocking Execution**: To prevent the CPU-bound matrix multiplication from blocking Litestar's async event loop, inferences are dispatched to background threads using `asyncio.to_thread()`.
 
-### LMAX Disruptor <-> Triton Inference Server
-- **Transport**: CUDA Shared Memory extensions (preferred) or highly optimized gRPC.
-- **Logic**: The Rust backend batches incoming market vectors and writes them directly to GPU memory, signaling Triton to execute the TensorRT Decision Transformer model, yielding sub-millisecond inference times.
-
-### LMAX Disruptor <-> GreptimeDB
-- **Transport**: Asynchronous batch writes.
-- **Logic**: A background thread consumes OpenTelemetry `RDTSC` timestamps from the Disruptor and writes them directly to GreptimeDB to feed the frontend's Telemetry Dashboard.
+### Python <-> Database (Supabase)
+- **Transport**: PostgreSQL Wire Protocol over TCP.
+- **Logic**: ORM (SQLAlchemy) maps Python classes to the Supabase tables, allowing authenticated reads and writes.

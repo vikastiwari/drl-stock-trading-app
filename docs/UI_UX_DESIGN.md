@@ -1,41 +1,31 @@
 # UI/UX Design Strategy: DRL Stock Trading App
 
-This document outlines the design philosophy and screen specifications, heavily optimized for high-frequency WebGL rendering.
+This document outlines the design philosophy and component specifications for our premium retail dashboard.
 
-## 1. Design Philosophy & Dynamic Theming
-We are building a 10/10 enterprise-grade portfolio project. 
-- **Aesthetic**: Premium, glassmorphic financial dashboard with instant context-switching.
-- **Dynamic Themes**: The user can toggle between three highly curated themes without any rendering delay:
-  1. **"Midnight Exchange" (Dark Mode - Default)**: Deep blacks (`#0a0a0a`), slate grays (`#1a1a1a`). Easy on the eyes for extended trading sessions.
-  2. **"Institutional Day" (Light Mode)**: Crisp whites (`#ffffff`), off-white backgrounds (`#f4f5f7`), and sharply contrasting text for bright environments.
-  3. **"Quant Terminal" (High Contrast)**: Pitch black background (`#000000`) with pure phosphor green text (`#00ff00`) and borders, mimicking old-school Bloomberg or Unix terminals.
-- **Semantic Colors**: Regardless of theme, vibrant neons dictate action (Neon Green `#00ff9d` for profit/buy, Neon Red `#ff3366` for loss/sell, Electric Blue `#00b8ff` for AI insights).
-- **Typography**: Inter or Roboto Mono for numbers, ensuring tabular lining so prices don't jitter when updating rapidly.
+## 1. Design Philosophy & Aesthetic
+We are building a 10/10 enterprise-grade portfolio project optimized for the retail trader.
+- **Aesthetic**: Premium, glassmorphic dark-mode dashboard with instant context-switching and deep glowing aesthetics.
+- **Color Palette**: Deep slate grays (`slate-900`, `slate-800`) form the base, highlighted by vivid cyan and purple glows (`bg-cyan-900/30 blur-[120px]`). 
+- **Typography**: Inter (sans-serif) for all UI elements, prioritizing readability and modern tech aesthetics.
 
 ## 2. Core Layout
-The application features a single-page dashboard layout.
-- **Top Navbar**: Logo, Search bar (for tickers), Total Portfolio Value, Available Cash, and Auto-Trade Toggle.
-- **Left Sidebar**: Watchlist (list of active tickers with mini-sparkline charts).
+The application features a responsive, single-page dashboard layout.
+- **TopNav**: The master navigation bar containing the brand logo, Gemini Lite Search Input, Notifications bell, Settings, and Admin profile dropdowns. Uses a `backdrop-blur-xl` glass effect.
 - **Main Content Area**:
-  - **Top**: Main Candlestick Chart (**SciChart.js** WebGL Canvas).
-  - **Bottom Left**: AI Insights & DRL Signal Panel.
-  - **Bottom Center**: Telemetry & Latency Profiling Dashboard.
-  - **Bottom Right**: Order Execution Panel (Buy/Sell).
-- **Right Sidebar**: Current Positions and Recent Transaction History.
+  - **Left Area (2/3 width)**: The TradingView Lightweight Chart canvas rendering real-time portfolio value.
+  - **Right Area (1/3 width)**: The AI Reasoning Panel, detailing the model's live target asset allocations.
 
-## 3. The "AI Insights" Panel
-This panel displays the internal state of the Decision Transformer:
-- **Current State**: The normalized state vector (RSI, MACD, etc.) passed to the model.
-- **Recommended Action**: A clear signal (e.g., "STRONG BUY", "HOLD", "SELL").
-- **Confidence Score**: A visual gauge (0-100%) indicating the LLM-adapted model's confidence.
-- **Auto-Trade Toggle**: A master switch that allows the DRL agent to bypass manual confirmation and place trades autonomously via the LMAX Disruptor.
+## 3. TopNav & Gemini Integration
+- **Search Bar**: A dynamic input field that expands on focus (`w-64 focus:w-96`).
+- **AI Dropdown**: Pressing Enter triggers a query to Gemini 1.5 Lite. The response streams into a custom absolute-positioned glass panel with a simulated typewriter effect for organic feedback.
+- **Dropdowns**: Profile, Notifications, and Settings dropdowns utilize `framer-motion` for buttery smooth `y: 10` to `y: 0` entrance animations.
 
-## 4. Hardware Telemetry Dashboard (The "Wow Factor")
-To demonstrate "mechanical sympathy", this dedicated panel visualizes the system's exact speed:
-- **Tick-to-Trade Latency Histogram**: A live graph showing p50, p95, and p99 latency in *microseconds*.
-- **Data Source**: Driven by OpenTelemetry traces captured using CPU `RDTSC` instructions and queried from GreptimeDB.
+## 4. The "AI Insights" Panel
+This panel displays the internal state of the PyTorch FinRL agent:
+- **Target Weights**: The AI's desired portfolio allocation (e.g., AAPL: 50%, MSFT: 30%, CASH: 20%).
+- **Visual Gauges**: Rendered using smooth Tailwind CSS width transitions (`transition-all duration-1000`) and Framer Motion layouts.
 
 ## 5. Micro-Animations & Feedback
-- **Price Ticks**: When a price updates, it flashes briefly (green/red).
-- **Order Execution**: A satisfying toast notification when an order is filled.
-- **Skeleton Loaders**: Sleek skeleton loaders occupy the layout while the Rust backend establishes the QUIC connection.
+- **Chart Updates**: `lightweight-charts` natively handles cubic-bezier easing for crosshair and line updates.
+- **Pulse Effects**: Background decorative blobs pulse gently, keeping the UI feeling alive even when the market is slow.
+- **Hover States**: All buttons and dropdown items have subtle background lighting shifts (`hover:bg-slate-700/50`) to ensure tactile response.

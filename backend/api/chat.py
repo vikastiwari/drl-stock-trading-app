@@ -1,4 +1,6 @@
 import os
+from dotenv import load_dotenv
+load_dotenv()
 from litestar import post
 from litestar.exceptions import HTTPException
 from pydantic import BaseModel
