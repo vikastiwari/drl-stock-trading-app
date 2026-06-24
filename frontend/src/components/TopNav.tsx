@@ -130,8 +130,8 @@ export function TopNav() {
                 >
                   <h4 className="p-3 border-b border-slate-700/50 m-0 font-medium text-sm text-slate-200">System Alerts</h4>
                   <div className="p-2">
-                    <DropdownItem icon={<AlertCircle className="text-pink-500" size={16} />} title="High Volatility Detected" desc="AAPL price swings exceed 5% threshold." />
-                    <DropdownItem icon={<CheckCircle2 className="text-emerald-500" size={16} />} title="Model Sync Complete" desc="FinRL target weights synced successfully." />
+                    <DropdownItem icon={<AlertCircle className="text-pink-500" size={16} />} title="High Volatility Detected" desc="AAPL price swings exceed 5% threshold." onClick={() => setIsAlertsOpen(false)} />
+                    <DropdownItem icon={<CheckCircle2 className="text-emerald-500" size={16} />} title="Model Sync Complete" desc="FinRL target weights synced successfully." onClick={() => setIsAlertsOpen(false)} />
                   </div>
                 </motion.div>
               )}
@@ -155,8 +155,8 @@ export function TopNav() {
                   className="glass-panel absolute top-12 right-0 w-56 rounded-xl border border-slate-700/50 overflow-hidden"
                 >
                   <div className="p-2">
-                    <DropdownItem icon={<Settings size={16} />} title="Trading Preferences" desc="Risk tolerance & sizing" />
-                    <DropdownItem icon={<Activity size={16} />} title="UI Theme" desc="Dark (Glassmorphic) Active" />
+                    <DropdownItem icon={<Settings size={16} />} title="Trading Preferences" desc="Risk tolerance & sizing" onClick={() => setIsSettingsOpen(false)} />
+                    <DropdownItem icon={<Activity size={16} />} title="UI Theme" desc="Dark (Glassmorphic) Active" onClick={() => setIsSettingsOpen(false)} />
                   </div>
                 </motion.div>
               )}
@@ -184,10 +184,10 @@ export function TopNav() {
                   className="glass-panel absolute top-12 right-0 min-w-[200px] rounded-xl border border-slate-700/50 overflow-hidden"
                 >
                   <div className="p-2">
-                    <DropdownItem icon={<User size={16} />} title="My Profile" />
-                    <DropdownItem icon={<CreditCard size={16} />} title="API Keys" />
+                    <DropdownItem icon={<User size={16} />} title="My Profile" onClick={() => setIsAdminOpen(false)} />
+                    <DropdownItem icon={<CreditCard size={16} />} title="API Keys" onClick={() => setIsAdminOpen(false)} />
                     <div className="h-[1px] bg-slate-700/50 my-1"></div>
-                    <DropdownItem icon={<LogOut size={16} className="text-pink-500" />} title="Logout" titleColor="text-pink-500" />
+                    <DropdownItem icon={<LogOut size={16} className="text-pink-500" />} title="Logout" titleColor="text-pink-500" onClick={() => setIsAdminOpen(false)} />
                   </div>
                 </motion.div>
               )}
@@ -199,9 +199,14 @@ export function TopNav() {
   );
 }
 
-function DropdownItem({ icon, title, desc, titleColor = "text-slate-200" }: { icon: React.ReactNode, title: string, desc?: string, titleColor?: string }) {
+function DropdownItem({ icon, title, desc, titleColor = "text-slate-200", onClick }: { icon: React.ReactNode, title: string, desc?: string, titleColor?: string, onClick?: () => void }) {
+  const handleClick = () => {
+    alert(`Coming Soon: ${title} Module!`);
+    if (onClick) onClick();
+  };
+
   return (
-    <div className="flex items-start gap-3 p-3 cursor-pointer rounded-lg hover:bg-slate-700/50 transition-colors">
+    <div onClick={handleClick} className="flex items-start gap-3 p-3 cursor-pointer rounded-lg hover:bg-slate-700/50 transition-colors">
       <div className="mt-0.5 text-slate-400">{icon}</div>
       <div>
         <div className={`text-sm font-medium ${titleColor} ${desc ? 'mb-1' : 'mb-0'}`}>{title}</div>
