@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 load_dotenv()
-from litestar import post
+from litestar import post, Request
 from litestar.exceptions import HTTPException
 from pydantic import BaseModel
 
@@ -22,10 +22,11 @@ If the user asks about unrelated topics (like recipes, general history, etc), po
 """
 
 @post("/api/chat")
-async def chat_with_gemini(data: ChatRequest) -> ChatResponse:
-    api_key = os.environ.get("GOOGLE_API_KEY")
+async def chat_with_gemini(data: ChatRequest, request: Request) -> ChatResponse:
+    # Get API key from custom header first, then fallback to environment variable
+    api_key = request.headers.get("x-gemini-key") or os.environ.get("GOOGLE_API_KEY")
     if not api_key:
-        return ChatResponse(reply="⚠️ GOOGLE_API_KEY is not set in the environment. Please restart the backend with your API key to use the Gemini Assistant.")
+        return ChatResponse(reply="⚠️ GOOGLE_API_KEY is not set. Please provide your API key in the UI settings or environment variables.")
     
     try:
         # Run synchronous SDK call in thread

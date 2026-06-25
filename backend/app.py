@@ -8,6 +8,7 @@ from backend.api.market_data import ResilientMarketDataFetcher
 from backend.ai.inference import DRLPortfolioEngine
 from backend.api.sentiment import AlternativeSentimentEngine
 from backend.api.backtest import AsyncBacktestEngine
+from backend.api.chat import chat_with_gemini
 
 # Instantiate the core architecture services globally
 active_universe = ["AAPL", "MSFT", "GOOGL", "AMZN"]
@@ -98,7 +99,7 @@ async def health_check() -> dict[str, str]:
 # Initialize the Litestar ASGI application
 cors_config = CORSConfig(allow_origins=["*"])
 app = Litestar(
-    route_handlers=[terminal_feed_handler, get_historical_data, get_vpvr_data, backtest_handler, health_check],
+    route_handlers=[terminal_feed_handler, get_historical_data, get_vpvr_data, backtest_handler, health_check, chat_with_gemini],
     cors_config=cors_config,
     debug=True
 )

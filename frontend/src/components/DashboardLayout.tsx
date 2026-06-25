@@ -147,9 +147,9 @@ export function DashboardLayout({ chartDataPoint, targetWeights, sentimentPayloa
                   Wgt: {targetWeights ? (targetWeights[ticker] * 100).toFixed(1) : '0.0'}%
                 </span>
               </div>
-              <div className="flex-1 h-12 w-full mt-1">
+              <div className="flex-1 min-h-[60px] w-full mt-2 relative">
                 {historicalData[ticker] && historicalData[ticker].length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="99%" height="100%">
                     <LineChart data={historicalData[ticker]}>
                       <YAxis domain={['dataMin', 'dataMax']} hide />
                       <Line 

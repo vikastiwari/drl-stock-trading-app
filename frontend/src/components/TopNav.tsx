@@ -11,7 +11,7 @@ export function TopNav() {
   const [isAlertsOpen, setIsAlertsOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
-  const { openModal } = useStore();
+  const { openModal, apiKeys } = useStore();
 
   const navRef = useRef<HTMLDivElement>(null);
 
@@ -35,9 +35,14 @@ export function TopNav() {
       setGeminiResponse('Thinking...');
       
       try {
-        const response = await fetch('/api/chat', {
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (apiKeys?.geminiKey) {
+          headers['X-Gemini-Key'] = apiKeys.geminiKey;
+        }
+
+        const response = await fetch('http://localhost:8000/api/chat', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify({ message: searchQuery })
         });
         

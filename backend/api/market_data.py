@@ -79,16 +79,11 @@ class ResilientMarketDataFetcher:
         Fetches 30 days of historical data for rendering the Tear Sheet.
         """
         try:
-            # Instantiate a fresh session per thread to prevent libcurl segfaults
-            session = requests.Session(impersonate="chrome131")
-            session.timeout = 2.0
-            
             df = yf.download(
                 tickers=ticker,
                 period="1mo",
                 interval="1d",
                 auto_adjust=True,
-                session=session,
                 progress=False
             )
             
