@@ -4,7 +4,7 @@ import { Settings, Activity, User, CreditCard, X, Shield, Zap, Bell, CheckCircle
 import { useStore } from '../store';
 
 export const GlobalModal = () => {
-  const { isModalOpen, closeModal, modalType, theme, setTheme } = useStore();
+  const { isModalOpen, closeModal, modalType, theme, setTheme, apiKeys, setApiKeys } = useStore();
 
   if (!isModalOpen) return null;
 
@@ -56,22 +56,37 @@ export const GlobalModal = () => {
         </div>
       )
     },
-    apikeys: {
+      apikeys: {
       icon: <CreditCard size={28} className="text-cyan-400" />,
       title: "API Integrations",
       desc: "Manage Google AI and Alpaca Market Keys",
       render: () => (
         <div className="flex flex-col gap-6 mt-4">
           <div className="p-6 bg-[var(--bg-dark)] border border-cyan-500/50 rounded-xl relative overflow-hidden">
-            <motion.div 
-              animate={{ rotate: 360 }} transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-              className="absolute -top-[50%] -right-[20%] w-[150px] h-[150px] bg-[radial-gradient(circle,rgba(0,240,255,0.15)_0%,transparent_70%)]"
-            />
             <h3 className="text-cyan-400 text-lg mb-2 flex items-center gap-2 font-bold">
               <Zap size={18} /> Google AI Studio
             </h3>
-            <p className="text-[var(--text-main)] font-mono text-sm">****************************abcd</p>
+            <input 
+              type="password"
+              placeholder="Enter Gemini API Key..."
+              value={apiKeys.geminiKey}
+              onChange={(e) => setApiKeys({ ...apiKeys, geminiKey: e.target.value })}
+              className="w-full mt-2 p-2 bg-black/30 border border-[var(--border-subtle)] text-[var(--text-main)] rounded-lg outline-none font-mono text-sm"
+            />
             <p className="text-xs text-[var(--text-muted)] mt-2">Active: Gemini 2.5 Flash Lite</p>
+          </div>
+          <div className="p-6 bg-[var(--bg-dark)] border border-purple-500/50 rounded-xl relative overflow-hidden">
+            <h3 className="text-purple-400 text-lg mb-2 flex items-center gap-2 font-bold">
+              <CreditCard size={18} /> Alpaca Trading API
+            </h3>
+            <input 
+              type="password"
+              placeholder="Enter Alpaca API Key..."
+              value={apiKeys.apcaKey}
+              onChange={(e) => setApiKeys({ ...apiKeys, apcaKey: e.target.value })}
+              className="w-full mt-2 p-2 bg-black/30 border border-[var(--border-subtle)] text-[var(--text-main)] rounded-lg outline-none font-mono text-sm"
+            />
+            <p className="text-xs text-[var(--text-muted)] mt-2">Environment: Paper Trading</p>
           </div>
         </div>
       )

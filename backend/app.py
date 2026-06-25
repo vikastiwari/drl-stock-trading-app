@@ -7,6 +7,7 @@ from litestar.config.cors import CORSConfig
 from backend.api.market_data import ResilientMarketDataFetcher
 from backend.ai.inference import DRLPortfolioEngine
 from backend.api.sentiment import AlternativeSentimentEngine
+from backend.api.backtest import AsyncBacktestEngine
 
 # Instantiate the core architecture services globally
 active_universe = ["AAPL", "MSFT", "GOOGL", "AMZN"]
@@ -78,6 +79,18 @@ async def get_historical_data(ticker: str) -> dict[str, Any]:
     data = await asyncio.to_thread(market_streamer.get_historical_data, ticker)
     return {"ticker": ticker, "data": data}
 
+@get("/api/vpvr/{ticker:str}")
+async def get_vpvr_data(ticker: str) -> dict[str, Any]:
+    data = await asyncio.to_thread(market_streamer.get_vpvr, ticker)
+    return {"ticker": ticker, "data": data}
+
+@websocket_listener("/ws/backtest")
+async def backtest_handler(data: Dict[str, Any], socket: WebSocket) -> None:
+    ticker = data.get("ticker", "AAPL")
+    period = data.get("period", "1y")
+    engine = AsyncBacktestEngine()
+    await engine.run_backtest(socket, ticker, period)
+
 @get("/health")
 async def health_check() -> dict[str, str]:
     return {"status": "ok", "architecture": "litestar_websocket_pytorch"}
@@ -85,7 +98,7 @@ async def health_check() -> dict[str, str]:
 # Initialize the Litestar ASGI application
 cors_config = CORSConfig(allow_origins=["*"])
 app = Litestar(
-    route_handlers=[terminal_feed_handler, get_historical_data, health_check],
+    route_handlers=[terminal_feed_handler, get_historical_data, get_vpvr_data, backtest_handler, health_check],
     cors_config=cors_config,
     debug=True
 )

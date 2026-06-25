@@ -25,3 +25,9 @@ The application features a responsive, 12-column CSS Grid layout.
 - **Chart Updates**: `lightweight-charts` natively handles cubic-bezier easing for crosshair and line updates.
 - **Pulse Effects**: Background decorative blobs pulse gently, keeping the UI feeling alive even when the market is slow.
 - **List Transitions**: Framer Motion powers `AnimatePresence` on incoming news items so they slide in fluidly.
+
+## 5. Phase 9 Additions: The Ultimate Terminal
+- **Terminal CLI**: A Bloomberg-style interactive command-line interface (`root@terminal:~#`) at the bottom of the dashboard that accepts text commands like `/backtest AAPL`.
+- **Event-Driven Backtest Overlay**: A beautiful translucent overlay powered by Framer Motion that instantly charts Async historical streaming backtests comparing the AI (PPO) agent against the Buy & Hold S&P 500 benchmark using `recharts`.
+- **Multi-Window Sync**: Utilizing the `BroadcastChannel` API to instantly sync websocket streams across detached multi-monitor pop-out windows.
+- **Scrollable Layout**: Updated CSS architecture to fully support `overflow-y-auto` while maintaining background blur consistency across variable heights.

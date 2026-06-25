@@ -12,12 +12,13 @@ This application is built exclusively for Retail AI Trading, utilizing state-of-
 ### 2. DRL & AI Engine
 - **Framework**: `stable-baselines3`, `gymnasium`, and `PyTorch`
 - **Agent**: Proximal Policy Optimization (PPO).
-- **Sentiment**: Gemini 1.5 Flash using Structured Outputs (Pydantic) for deterministic numerical extraction from live Alpaca News feeds.
+- **Sentiment**: A "Committee of Agents" (Fundamental, Technical, Macro) using Gemini 1.5 Flash with Structured Outputs (Pydantic) for deterministic numerical extraction, orchestrated concurrently.
 - **Inference**: Handled in a background thread via `asyncio.to_thread` to prevent event loop blocking.
+- **Backtesting**: An asynchronous historical simulation engine (`api/backtest.py`) that streams tick-by-tick performance over WebSocket.
 
 ### 3. PostgreSQL Database (Supabase)
-- **Role**: (Future Phase) Relational store for users, portfolio history, and raw OHLCV ticks.
-- **Features**: Row Level Security (RLS) and built-in authentication ensuring tenant isolation.
+- **Role**: Relational store for user preferences, settings, and API keys.
+- **Integration**: Direct REST API requests via custom frontend fetch wrapper to avoid dependency conflicts, falling back gracefully to `localStorage`.
 
 ### 4. React Vite Frontend
 - **Framework**: React 18, Vite, TailwindCSS, Framer Motion.

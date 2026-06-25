@@ -4,6 +4,8 @@ import { GlobalModal } from './components/GlobalModal';
 import { StoreProvider } from './store';
 import { DashboardLayout } from './components/DashboardLayout';
 import { useCrossTabState } from './hooks/useCrossTabState';
+import TerminalCLI from './components/TerminalCLI';
+import BacktestModal from './components/BacktestModal';
 
 interface TerminalState {
   event_type: string;
@@ -31,6 +33,7 @@ function AppContent() {
   // Use the new BroadcastChannel hook to sync state across tabs instantly
   const [terminalState, setTerminalState] = useCrossTabState<TerminalState | null>('drl-terminal-state', null);
   const [chartDataPoint, setChartDataPoint] = useCrossTabState<{ time: number; value: number } | null>('drl-chart-data', null);
+  const [activeBacktestTicker, setActiveBacktestTicker] = useState<string | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -72,11 +75,11 @@ function AppContent() {
   }, [isPopout]);
 
   return (
-    <div className="min-h-screen p-6 relative overflow-hidden font-sans pb-12 transition-colors duration-300">
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-cyan-900/30 blur-[120px] pointer-events-none"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-purple-900/30 blur-[120px] pointer-events-none"></div>
+    <div className="min-h-screen p-6 relative overflow-x-hidden overflow-y-auto font-sans pb-12 transition-colors duration-300">
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-cyan-900/30 blur-[120px] pointer-events-none fixed"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-purple-900/30 blur-[120px] pointer-events-none fixed"></div>
 
-      <div className="max-w-[1600px] mx-auto relative z-10 flex flex-col gap-6 h-screen">
+      <div className="max-w-[1600px] mx-auto relative z-10 flex flex-col gap-6 min-h-screen">
         {!isPopout && <TopNav />}
         <div className="flex-1 h-full min-h-[800px]">
           <DashboardLayout 
@@ -91,9 +94,24 @@ function AppContent() {
             } : null}
             popoutPanel={popoutPanel}
           />
+          {!isPopout && (
+            <TerminalCLI 
+              onCommand={(cmd, args) => {
+                if (cmd === '/backtest' && args.length > 0) {
+                  setActiveBacktestTicker(args[0].toUpperCase());
+                }
+              }} 
+            />
+          )}
         </div>
       </div>
       
+      {activeBacktestTicker && (
+        <BacktestModal 
+          ticker={activeBacktestTicker} 
+          onClose={() => setActiveBacktestTicker(null)} 
+        />
+      )}
       <GlobalModal />
     </div>
   );
