@@ -1,10 +1,11 @@
 version: '3.8'
 
 services:
-  trading-terminal:
-    build: 
-      context: .
+  backend:
+    build:
+      context: ./backend
       dockerfile: Dockerfile
+    container_name: drl_backend
     ports:
       - "8000:8000"
     environment:
@@ -12,5 +13,16 @@ services:
       - APCA_API_KEY_ID=${APCA_API_KEY_ID}
       - APCA_API_SECRET_KEY=${APCA_API_SECRET_KEY}
     volumes:
-      - ./models:/app/models
+      - ./backend:/app
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: drl_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
     restart: unless-stopped
