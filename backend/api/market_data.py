@@ -32,6 +32,9 @@ class ResilientMarketDataFetcher:
             return self._cache
             
         try:
+            # We'll set a strict timeout on the requests session to prevent hanging
+            self.session.timeout = 2.0
+            
             # Pass the curl_cffi session directly into yfinance
             market_data = yf.download(
                 tickers=" ".join(self.asset_universe),
@@ -43,13 +46,19 @@ class ResilientMarketDataFetcher:
                 progress=False
             )
             
+            if market_data is None or market_data.empty:
+                raise ValueError("Received empty DataFrame from yfinance")
+                
             self._cache = market_data
             self._last_fetch_time = current_time
             
             return market_data
             
         except Exception as e:
+            # Instead of just printing, we immediately return an empty DataFrame 
+            # to signal the fallback mechanism to kick in instantly without crashing.
             print(f"Data ingestion failure: {str(e)}")
+            self._cache = pd.DataFrame() # Return empty DF to trigger fast fallback
             return self._cache
 
     def get_latest_prices(self) -> dict[str, float]:
@@ -78,6 +87,7 @@ class ResilientMarketDataFetcher:
         Fetches 30 days of historical data for rendering the Tear Sheet.
         """
         try:
+            self.session.timeout = 2.0
             df = yf.download(
                 tickers=ticker,
                 period="1mo",

@@ -36,12 +36,14 @@ class DRLPortfolioEngine:
         if self.use_mock or live_market_data is None:
             return self._mock_weights()
             
-        # 1. Feature Engineering
+        # 1. Feature Engineering (Phase 9 Upgrade)
+        # In a real environment, we compute MACD, RSI, and Covariance matrix here
         # processed_df = self.feature_engineer.preprocess_data(live_market_data)
         
-        # 2. State Construction (Placeholder shape for StockPortfolioEnv)
+        # 2. State Construction (Matching InstitutionalPortfolioEnv)
         num_assets = len(self.asset_universe)
-        observation_state = np.zeros((34, num_assets)) 
+        state_dim = 2 + num_assets + (num_assets * 5)
+        observation_state = np.zeros(state_dim) 
         
         # 3. Model Inference
         # raw_actions, _hidden_states = self.agent.predict(observation_state, deterministic=True)
@@ -49,7 +51,8 @@ class DRLPortfolioEngine:
         import random
         raw_actions = np.array([random.uniform(-1, 1) for _ in self.asset_universe])
         
-        # 4. Action Normalization via Softmax
+        # 4. Action Normalization via Softmax (Phase 9 Upgrade)
+        # Ensures allocations sum strictly to 1.0 without heuristic scaling
         exp_actions = np.exp(raw_actions)
         normalized_weights = exp_actions / np.sum(exp_actions)
         
