@@ -25,7 +25,8 @@ backend/
 │   ├── inference.py         # DRLPortfolioEngine definition
 │   └── train_ppo.py         # Training script for PPO Model
 ├── api/
-│   ├── market_data.py       # ResilientMarketDataFetcher (curl_cffi)
+│   ├── execution.py         # AlpacaExecutionEngine (Paper/Live Trading)
+│   ├── market_data.py       # ResilientMarketDataFetcher (yfinance multi-threading)
 │   └── sentiment.py         # AlternativeSentimentEngine (Gemini/Alpaca)
 └── app.py                   # Litestar App, WebSocket listener, and Lifecycle
 ```
@@ -34,7 +35,7 @@ backend/
 
 ### `backend/app.py`
 - **Responsibility**: Houses the Litestar application lifecycle and the `@websocket_listener`.
-- **Logic**: Implements a `while True` loop that feeds data into the model, triggering the LLM sentiment extraction, generating state predictions that are JSON-serialized and pushed over WebSocket.
+- **Logic**: Implements a `while True` loop that feeds data into the model, triggering the LLM sentiment extraction, generating state predictions, executing real trades via Alpaca, and pushing execution logs over WebSocket.
 
 ### `DashboardLayout.tsx` (Frontend)
 - **Responsibility**: 12-column responsive CSS grid organizing multiple visual components.

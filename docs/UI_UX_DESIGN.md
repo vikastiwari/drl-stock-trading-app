@@ -26,8 +26,9 @@ The application features a responsive, 12-column CSS Grid layout.
 - **Pulse Effects**: Background decorative blobs pulse gently, keeping the UI feeling alive even when the market is slow.
 - **List Transitions**: Framer Motion powers `AnimatePresence` on incoming news items so they slide in fluidly.
 
-## 5. Phase 9 Additions: The Ultimate Terminal
-- **Terminal CLI**: A Bloomberg-style interactive command-line interface (`root@terminal:~#`) at the bottom of the dashboard that accepts text commands like `/backtest AAPL`.
+## 5. The Ultimate Trading Dashboard
+- **Auto-Trading Toggle**: A globally accessible switch allowing users to seamlessly transition between Simulation mode and Live Paper Trading Execution.
+- **Terminal CLI**: A Bloomberg-style interactive command-line interface (`root@terminal:~#`) at the bottom of the dashboard that accepts text commands and streams real-time trade execution logs (`[ALPACA] BOUGHT 1.25 shares`) directly from the backend via WebSockets.
 - **Event-Driven Backtest Overlay**: A beautiful translucent overlay powered by Framer Motion that instantly charts Async historical streaming backtests comparing the AI (PPO) agent against the Buy & Hold S&P 500 benchmark using `recharts`.
 - **Multi-Window Sync**: Utilizing the `BroadcastChannel` API to instantly sync websocket streams across detached multi-monitor pop-out windows.
 - **Scrollable Layout**: Updated CSS architecture to fully support `overflow-y-auto` while maintaining background blur consistency across variable heights.

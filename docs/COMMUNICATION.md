@@ -2,14 +2,14 @@
 
 This document details the real-time data exchange protocols between the React Frontend, the Litestar Backend, and the PyTorch Engine.
 
-## 1. Client-Server Transport (Server-Sent Events)
-We utilize **Server-Sent Events (SSE)** to provide a fluid, unidirectional stream of portfolio data to the React client.
+## 1. Client-Server Transport (Bidirectional WebSockets)
+We utilize **Bidirectional WebSockets** to provide a fluid, real-time stream of portfolio data to the React client and allow for real-time control (e.g., toggling Auto-Trading).
 
-### Unidirectional Data Streaming (The Hot Path)
-- **Endpoint**: `/api/stream/portfolio`
-- **Protocol**: HTTP/1.1 or HTTP/2 Server-Sent Events.
-- **Payload**: JSON format via `msgspec` serialization.
-- **Behavior**: The backend maintains an open connection and pushes target weights and portfolio balances every few seconds. The React client listens via the native `EventSource` API, triggering state updates without polling overhead.
+### Bidirectional Data Streaming (The Hot Path)
+- **Endpoint**: `/ws/terminal-feed`
+- **Protocol**: WebSocket (WSS in production).
+- **Payload**: JSON format.
+- **Behavior**: The backend maintains an open connection, listening for configuration changes (like `autoTradeEnabled`), and continuously pushes target weights, portfolio balances, sentiment scores, and execution logs. The React client listens via native WebSocket APIs, triggering state updates without polling overhead.
 
 ### Business Queries & LLM Interaction
 - **Endpoint**: `/api/chat`
