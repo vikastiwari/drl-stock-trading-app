@@ -33,7 +33,7 @@ class DRLPortfolioEngine:
         Ingests a DataFrame of recent OHLCV data for the asset universe,
         constructs the state observation, and queries the DRL policy for optimal weights.
         """
-        if self.use_mock or live_market_data is None:
+        if self.use_mock or live_market_data is None or live_market_data.empty:
             return self._mock_weights()
             
         # 1. Feature Engineering (Phase 9 Upgrade)

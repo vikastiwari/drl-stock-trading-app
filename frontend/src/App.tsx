@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { TopNav } from './components/TopNav';
 import { GlobalModal } from './components/GlobalModal';
-import { StoreProvider } from './store';
+import { StoreProvider, useStore } from './store';
 import { DashboardLayout } from './components/DashboardLayout';
 import { useCrossTabState } from './hooks/useCrossTabState';
 import TerminalCLI from './components/TerminalCLI';

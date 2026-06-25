@@ -46,6 +46,11 @@ async def terminal_feed_handler(data: Dict[str, Any], socket: WebSocket) -> None
             market_state_df = await asyncio.to_thread(market_streamer.get_latest_market_state)
             current_prices = await asyncio.to_thread(market_streamer.get_latest_prices)
             
+            if not current_prices or market_state_df.empty:
+                print("Failed to fetch live market data (likely rate-limited). Using mock data to proceed with Demo...")
+
+
+            
             # 2. Compute the optimal portfolio allocation via the DRL agent
             target_allocations = await asyncio.to_thread(drl_agent.compute_optimal_weights, market_state_df)
             
