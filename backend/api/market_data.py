@@ -35,7 +35,8 @@ class ResilientMarketDataFetcher:
                 group_by="ticker",
                 auto_adjust=True,
                 session=session,
-                progress=False
+                progress=False,
+                threads=False
             )
             
             if market_data is None or market_data.empty:
@@ -84,7 +85,8 @@ class ResilientMarketDataFetcher:
                 period="1mo",
                 interval="1d",
                 auto_adjust=True,
-                progress=False
+                progress=False,
+                threads=False
             )
             
             if df is None or df.empty:
@@ -139,7 +141,8 @@ class ResilientMarketDataFetcher:
                 interval="1d",
                 auto_adjust=True,
                 session=session,
-                progress=False
+                progress=False,
+                threads=False
             )
             
             if df is None or df.empty:
@@ -196,7 +199,8 @@ class ResilientMarketDataFetcher:
                 interval="1d",
                 auto_adjust=True,
                 session=session,
-                progress=False
+                progress=False,
+                threads=False
             )
             
             if df is None or df.empty:

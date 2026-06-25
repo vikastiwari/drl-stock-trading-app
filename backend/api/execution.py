@@ -20,6 +20,10 @@ class AlpacaExecutionEngine:
             self.client = None
 
     def rebalance_portfolio(self, target_weights: dict, current_prices: dict) -> list[str]:
+        if not self.enabled:
+            return ["[SYSTEM] Auto-Trading is DISABLED. Running in Simulation mode."]
+        if not self.client:
+            return ["[SYSTEM] Auto-Trading is DISABLED. Missing or Invalid API Keys."]
         """
         Calculates required position changes to reach target_weights, and executes them as fractional market orders.
         Returns a list of execution summary strings.
@@ -39,6 +43,8 @@ class AlpacaExecutionEngine:
             all_symbols = set(target_weights.keys()).union(set(current_positions_dollars.keys()))
             
             execution_logs = []
+            sell_orders = []
+            buy_orders = []
             
             for symbol in all_symbols:
                 target_weight = target_weights.get(symbol, 0.0)
@@ -69,9 +75,41 @@ class AlpacaExecutionEngine:
                         time_in_force=TimeInForce.DAY
                     )
                     
+                    if side == OrderSide.SELL:
+                        sell_orders.append((req, current_price))
+                    else:
+                        buy_orders.append((req, current_price))
+                        
+            # Execute sells first to free up buying power
+            import time
+            from datetime import datetime
+            
+            def log_event(msg: str):
+                ts = datetime.now().strftime('%H:%M:%S')
+                execution_logs.append(f"[{ts}] {msg}")
+
+            for req, price in sell_orders:
+                try:
                     self.client.submit_order(req)
-                    action_str = "BOUGHT" if side == OrderSide.BUY else "SOLD"
-                    execution_logs.append(f"[ALPACA] {action_str} {qty} shares of {symbol} @ ~${round(current_price, 2)}")
+                    log_event(f"[ALPACA] SOLD {req.qty} shares of {req.symbol} @ ~${round(price, 2)}")
+                except Exception as e:
+                    log_event(f"[ALPACA ERROR] {req.symbol} SELL: {str(e)}")
+            
+            if sell_orders:
+                time.sleep(2) # Allow Alpaca matching engine a moment to release buying power
+                
+            # Execute buys
+            for req, price in buy_orders:
+                try:
+                    self.client.submit_order(req)
+                    log_event(f"[ALPACA] BOUGHT {req.qty} shares of {req.symbol} @ ~${round(price, 2)}")
+                except Exception as e:
+                    # Capture specific insufficient buying power errors neatly
+                    err_msg = str(e)
+                    if "insufficient buying power" in err_msg:
+                        log_event(f"[ALPACA WARNING] Skipping {req.symbol} BUY: Pending SELL orders have not settled.")
+                    else:
+                        log_event(f"[ALPACA ERROR] {req.symbol} BUY: {err_msg}")
                     
             return execution_logs
             

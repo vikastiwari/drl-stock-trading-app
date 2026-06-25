@@ -70,11 +70,11 @@ function AppContent() {
     };
 
     return () => {
-      if (ws.readyState === WebSocket.OPEN) {
+      if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
         ws.close();
       }
     };
-  }, [isPopout]);
+  }, [isPopout, apiKeys.autoTradeEnabled]);
 
   return (
     <div className="min-h-screen p-6 relative overflow-x-hidden overflow-y-auto font-sans pb-12 transition-colors duration-300">

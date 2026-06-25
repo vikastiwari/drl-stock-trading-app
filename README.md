@@ -1,6 +1,7 @@
 # Deep Reinforcement Learning (DRL) Stock Trading App
 
-A world-class, fully autonomous AI trading application designed specifically for **Individual Retail Traders**. 
+> **Status: Completed 🚀**
+> A world-class, fully autonomous AI trading application designed specifically for **Individual Retail Traders**. 
 
 This application moves beyond basic heuristic algorithms and high-frequency trading (HFT) by deploying state-of-the-art Sequence-Modeling Reinforcement Learning directly into a modern, consumer-facing tech stack.
 
@@ -29,3 +30,13 @@ This application moves beyond basic heuristic algorithms and high-frequency trad
 1. Navigate to the frontend directory: `cd frontend`
 2. Install dependencies: `npm install`
 3. Run the development server: `npm run dev`
+
+## Automated Testing
+
+### Backend Unit Tests (Pytest)
+1. Ensure the virtual environment is active.
+2. Run `pytest --cov=backend tests/` to execute core business logic tests and generate a coverage report.
+
+### Frontend Component Tests (Vitest)
+1. Navigate to the frontend directory.
+2. Run `npm run test` to execute React component mounting and state initialization tests.

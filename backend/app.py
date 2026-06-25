@@ -17,6 +17,19 @@ market_streamer = ResilientMarketDataFetcher(asset_universe=active_universe)
 drl_agent = DRLPortfolioEngine(model_filepath="models/ppo_optimal_portfolio.zip", asset_universe=active_universe)
 sentiment_engine = AlternativeSentimentEngine()
 
+# Initialize execution engine
+execution_engine = AlpacaExecutionEngine()
+
+# Global state for simulation to persist across reconnects
+simulation_state = {
+    "first_run": True,
+    "portfolio_value": 500000.0,
+    "pnl_dollars": 0.0,
+    "pnl_percent": 0.0,
+    "current_cash": 0.0,
+    "shares_held": {}
+}
+
 @websocket_listener("/ws/terminal-feed")
 async def terminal_feed_handler(data: Dict[str, Any], socket: WebSocket) -> None:
     """
@@ -33,18 +46,19 @@ async def terminal_feed_handler(data: Dict[str, Any], socket: WebSocket) -> None
         secret_key=api_keys.get("apcaSecretKey"),
         paper=True
     )
+    # Ensure the engine's internal enabled state respects the UI toggle
+    execution_engine.enabled = auto_trade_enabled and bool(execution_engine.client)
     
-    initial_capital = 100000.0
-    shares_held = {ticker: 0.0 for ticker in active_universe}
-    current_cash = initial_capital
-    first_run = True
+    global simulation_state
     
     try:
         # Initiate an indefinite loop to continuously stream data to the terminal
         while True:
+            print("[DEBUG] Loop start")
             # 1. Acquire the current market state
             market_state_df = await asyncio.to_thread(market_streamer.get_latest_market_state)
             current_prices = await asyncio.to_thread(market_streamer.get_latest_prices)
+            print(f"[DEBUG] Market data fetched. Prices: {current_prices}")
             
             if not current_prices or market_state_df.empty:
                 print("Failed to fetch live market data (likely rate-limited). Using mock data to proceed with Demo...")
@@ -53,41 +67,56 @@ async def terminal_feed_handler(data: Dict[str, Any], socket: WebSocket) -> None
             
             # 2. Compute the optimal portfolio allocation via the DRL agent
             target_allocations = await asyncio.to_thread(drl_agent.compute_optimal_weights, market_state_df)
+            print(f"[DEBUG] Allocations computed: {target_allocations}")
             
             # 3. Assess the current sentiment for the user's focus asset
             sentiment_payload = await asyncio.to_thread(sentiment_engine.compute_ticker_sentiment, focus_asset)
+            print(f"[DEBUG] Sentiment payload generated")
             
-            # Calculate theoretical portfolio value
-            if first_run:
+            # Phase 8: Simulate Portfolio Value Changes
+            if simulation_state["first_run"]:
                 # Set initial allocations
                 for ticker, weight in target_allocations.items():
-                    amount_allocated = initial_capital * weight
-                    shares_held[ticker] = amount_allocated / current_prices[ticker]
-                current_cash = 0.0 # fully invested for simulation
-                first_run = False
-            
-            portfolio_value = current_cash + sum(shares_held[t] * current_prices[t] for t in active_universe)
-            pnl_dollars = portfolio_value - initial_capital
-            pnl_percent = (pnl_dollars / initial_capital) * 100
+                    amount_allocated = 500000.0 * weight
+                    simulation_state["shares_held"][ticker] = amount_allocated / current_prices[ticker]
+                simulation_state["current_cash"] = 0.0 # fully invested for simulation
+                simulation_state["first_run"] = False
+            else:
+                # Calculate new portfolio value based on held shares and current prices
+                new_value = simulation_state["current_cash"]
+                for ticker, shares in simulation_state["shares_held"].items():
+                    new_value += shares * current_prices[ticker]
+                
+                simulation_state["portfolio_value"] = new_value
+                simulation_state["pnl_dollars"] = new_value - 500000.0
+                simulation_state["pnl_percent"] = (simulation_state["pnl_dollars"] / 500000.0) * 100
             
             # 4. Construct the comprehensive update payload
             execution_logs = []
             if auto_trade_enabled:
+                print("[DEBUG] Rebalancing portfolio via Alpaca...")
                 execution_logs = await asyncio.to_thread(execution_engine.rebalance_portfolio, target_allocations, current_prices)
+                print(f"[DEBUG] Rebalance complete. Logs: {len(execution_logs)}")
+            else:
+                from datetime import datetime
+                ts = datetime.now().strftime('%H:%M:%S')
+                execution_logs = [f"[{ts}] [SYSTEM] Auto-Trading is DISABLED. Running in Simulation mode."]
 
             terminal_update = {
                 "event_type": "TERMINAL_STATE_UPDATE",
-                "initial_capital": initial_capital,
-                "portfolio_value": round(portfolio_value, 2),
-                "pnl_dollars": round(pnl_dollars, 2),
-                "pnl_percent": round(pnl_percent, 2),
                 "portfolio_allocations": target_allocations,
+                "portfolio_value": round(simulation_state["portfolio_value"], 2),
+                "pnl_dollars": round(simulation_state["pnl_dollars"], 2),
+                "pnl_percent": round(simulation_state["pnl_percent"], 2),
+                "initial_capital": 500000.0,
                 "asset_sentiment": sentiment_payload,
                 "execution_logs": execution_logs
             }
             
             # Broadcast the serialized JSON payload back to the React UI
+            print("[DEBUG] Sending payload over websocket...")
             await socket.send_json(terminal_update)
+            print("[DEBUG] Payload sent successfully. Sleeping 5s.")
             
             # Throttle the iteration to respect reasonable API limits
             await asyncio.sleep(5) 

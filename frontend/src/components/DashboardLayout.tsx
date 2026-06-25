@@ -98,7 +98,16 @@ export function DashboardLayout({ chartDataPoint, targetWeights, sentimentPayloa
   };
 
   return (
-    <div className="w-full h-full min-h-[800px] grid grid-cols-12 grid-rows-6 gap-4">
+    <div className="w-full h-full min-h-[800px] grid grid-cols-12 grid-rows-6 gap-4 relative">
+      {!targetWeights && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-[var(--bg-dark)]/80 backdrop-blur-md rounded-xl">
+          <div className="flex flex-col items-center">
+            <div className="w-12 h-12 border-4 border-[var(--accent-cyan)] border-t-transparent rounded-full animate-spin"></div>
+            <div className="mt-4 text-[var(--accent-cyan)] font-mono font-bold tracking-widest text-sm animate-pulse">COMPUTING INITIAL TARGETS...</div>
+          </div>
+        </div>
+      )}
+
       {renderPanel(
         'chart', 
         'Live Market', 

@@ -15,7 +15,6 @@ export function PortfolioChart({ dataPoint }: PortfolioChartProps) {
 
     // Initialize TradingView Chart
     const chart = createChart(chartContainerRef.current, {
-      autoSize: true,
       layout: {
         background: { type: ColorType.Solid, color: 'transparent' },
         textColor: '#94a3b8',

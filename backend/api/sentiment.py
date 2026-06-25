@@ -68,7 +68,9 @@ class AlternativeSentimentEngine:
             # 1. Fetch News for Fundamental Agent
             request_parameters = NewsRequest(symbols=target_ticker, limit=5)
             news_payload = self.news_api.get_news(request_parameters)
-            extracted_headlines = [article.headline for article in news_payload.news]
+            
+            # alpaca-py get_news returns a list-like object
+            extracted_headlines = [article.headline for article in news_payload]
             
             if not extracted_headlines:
                 return self._mock_sentiment(target_ticker)
@@ -79,7 +81,7 @@ class AlternativeSentimentEngine:
             # by providing it with the raw data for all three vectors.
             
             # Fetch real technicals from market_data (using a local fetcher instance to avoid circular imports)
-            from api.market_data import ResilientMarketDataFetcher
+            from backend.api.market_data import ResilientMarketDataFetcher
             fetcher = ResilientMarketDataFetcher([target_ticker])
             tech_data = fetcher.get_technical_indicators(target_ticker)
             

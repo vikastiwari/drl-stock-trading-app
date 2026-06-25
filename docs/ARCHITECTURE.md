@@ -6,8 +6,7 @@ This application is built exclusively for Retail AI Trading, utilizing state-of-
 
 ### 1. Python Litestar Backend
 - **Framework**: `Litestar` (Chosen for speed and enterprise plugins).
-- **Responsibility**: In-memory PyTorch inference, Alpaca News ingestion, curl_cffi Yahoo data ingestion, and orchestrating Bidirectional WebSockets.
-- **Phase 10: Live Paper Trading on Alpaca (Completed)**
+- **Responsibility**: In-memory PyTorch inference, Alpaca News ingestion, `yfinance` multi-threaded OHLCV ingestion, and orchestrating Bidirectional WebSockets.
 - **Execution Engine**: `AlpacaExecutionEngine` translates DRL target weights into required dollar amounts.
 - **Fractional Orders**: Sends `MarketOrderRequest` with notional quantities to Alpaca APIs.
 - **Event-Driven UI**: Execution logs (`[ALPACA] BOUGHT 1.25 shares`) stream directly to the Terminal CLI.
