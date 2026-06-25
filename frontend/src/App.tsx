@@ -6,7 +6,10 @@ import { DashboardLayout } from './components/DashboardLayout';
 
 interface TerminalState {
   event_type: string;
+  initial_capital: number;
   portfolio_value: number;
+  pnl_dollars: number;
+  pnl_percent: number;
   portfolio_allocations: { [key: string]: number };
   asset_sentiment: {
     score: number;
@@ -19,6 +22,7 @@ function AppContent() {
   const [targetWeights, setTargetWeights] = useState<{ [key: string]: number } | null>(null);
   const [chartDataPoint, setChartDataPoint] = useState<{ time: number; value: number } | null>(null);
   const [sentimentPayload, setSentimentPayload] = useState<any>(null);
+  const [pnlStats, setPnlStats] = useState<any>(null);
   const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
@@ -38,6 +42,12 @@ function AppContent() {
       if (data.event_type === 'TERMINAL_STATE_UPDATE') {
         setTargetWeights(data.portfolio_allocations);
         setSentimentPayload(data.asset_sentiment);
+        setPnlStats({
+          initial_capital: data.initial_capital,
+          pnl_dollars: data.pnl_dollars,
+          pnl_percent: data.pnl_percent,
+          portfolio_value: data.portfolio_value
+        });
         
         const currentTimeSeconds = Math.floor(Date.now() / 1000);
         setChartDataPoint({
@@ -66,6 +76,7 @@ function AppContent() {
             chartDataPoint={chartDataPoint} 
             targetWeights={targetWeights} 
             sentimentPayload={sentimentPayload} 
+            pnlStats={pnlStats}
           />
         </div>
       </div>

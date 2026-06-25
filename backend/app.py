@@ -22,12 +22,15 @@ async def terminal_feed_handler(data: Dict[str, Any], socket: WebSocket) -> None
     The server continuously pushes a synthesized payload of DRL allocations and sentiment.
     """
     focus_asset = data.get("target_asset", "AAPL")
+    initial_capital = 100000.0
+    shares_held = {ticker: 0.0 for ticker in active_universe}
+    current_cash = initial_capital
+    first_run = True
     
     try:
         # Initiate an indefinite loop to continuously stream data to the terminal
         while True:
             # 1. Acquire the current market state
-            # Offloaded to thread pool if the underlying library is synchronous.
             market_state_df = await asyncio.to_thread(market_streamer.get_latest_market_state)
             current_prices = await asyncio.to_thread(market_streamer.get_latest_prices)
             
@@ -38,12 +41,25 @@ async def terminal_feed_handler(data: Dict[str, Any], socket: WebSocket) -> None
             sentiment_payload = await asyncio.to_thread(sentiment_engine.compute_ticker_sentiment, focus_asset)
             
             # Calculate theoretical portfolio value
-            portfolio_value = 10000.0 + sum(current_prices.values()) * 10
+            if first_run:
+                # Set initial allocations
+                for ticker, weight in target_allocations.items():
+                    amount_allocated = initial_capital * weight
+                    shares_held[ticker] = amount_allocated / current_prices[ticker]
+                current_cash = 0.0 # fully invested for simulation
+                first_run = False
+            
+            portfolio_value = current_cash + sum(shares_held[t] * current_prices[t] for t in active_universe)
+            pnl_dollars = portfolio_value - initial_capital
+            pnl_percent = (pnl_dollars / initial_capital) * 100
             
             # 4. Construct the comprehensive update payload
             terminal_update = {
                 "event_type": "TERMINAL_STATE_UPDATE",
+                "initial_capital": initial_capital,
                 "portfolio_value": round(portfolio_value, 2),
+                "pnl_dollars": round(pnl_dollars, 2),
+                "pnl_percent": round(pnl_percent, 2),
                 "portfolio_allocations": target_allocations,
                 "asset_sentiment": sentiment_payload
             }
@@ -57,6 +73,11 @@ async def terminal_feed_handler(data: Dict[str, Any], socket: WebSocket) -> None
     except Exception as e:
         print(f"WebSocket connection terminated unexpectedly: {str(e)}")
 
+@get("/api/historical/{ticker:str}")
+async def get_historical_data(ticker: str) -> dict[str, Any]:
+    data = await asyncio.to_thread(market_streamer.get_historical_data, ticker)
+    return {"ticker": ticker, "data": data}
+
 @get("/health")
 async def health_check() -> dict[str, str]:
     return {"status": "ok", "architecture": "litestar_websocket_pytorch"}
@@ -64,7 +85,7 @@ async def health_check() -> dict[str, str]:
 # Initialize the Litestar ASGI application
 cors_config = CORSConfig(allow_origins=["*"])
 app = Litestar(
-    route_handlers=[terminal_feed_handler, health_check],
+    route_handlers=[terminal_feed_handler, get_historical_data, health_check],
     cors_config=cors_config,
     debug=True
 )

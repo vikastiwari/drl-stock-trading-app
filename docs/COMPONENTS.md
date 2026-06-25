@@ -8,10 +8,13 @@ This document outlines the React component hierarchy and Litestar backend struct
 ```
 src/
 ├── components/
-│   ├── TopNav.tsx           # Glassmorphic nav with Gemini Search
+│   ├── TopNav.tsx           # Glassmorphic nav with Global Modals
+│   ├── DashboardLayout.tsx  # Dynamic grid layout supporting Tear Sheets
+│   ├── GlobalModal.tsx      # Zustand-controlled UI popups (Settings, Alerts)
 │   ├── PortfolioChart.tsx   # TradingView Lightweight Charts canvas
-│   └── AIReasoningPanel.tsx # Framer-Motion animated AI insights
-├── App.tsx                  # Main layout and SSE orchestrator
+│   └── NewsSentimentWidget.tsx # Live rendering of Gemini Sentiment
+├── App.tsx                  # Main layout and WebSocket orchestrator
+├── store.tsx                # Zustand Global State
 └── main.tsx                 # React entry point
 ```
 
@@ -19,28 +22,28 @@ src/
 ```
 backend/
 ├── ai/
-│   ├── model.py             # PyTorch MockDRLAgent definition
-│   ├── state_vector.py      # Technical indicator normalization
-│   └── data_pipeline.py     # YFinance ingestion
+│   ├── inference.py         # DRLPortfolioEngine definition
+│   └── train_ppo.py         # Training script for PPO Model
 ├── api/
-│   └── chat.py              # Gemini 1.5 Lite REST route
-└── app.py                   # Litestar App, SSE endpoint, and Lifecycle
+│   ├── market_data.py       # ResilientMarketDataFetcher (curl_cffi)
+│   └── sentiment.py         # AlternativeSentimentEngine (Gemini/Alpaca)
+└── app.py                   # Litestar App, WebSocket listener, and Lifecycle
 ```
 
 ## 2. Key Architectural Components
 
 ### `backend/app.py`
-- **Responsibility**: Houses the Litestar application lifecycle and the `EventSource` generator.
-- **Logic**: Loads the PyTorch model on startup. Implements a `while True` loop that feeds mock or real data into the model, generating state predictions that are JSON-serialized and yielded over SSE.
+- **Responsibility**: Houses the Litestar application lifecycle and the `@websocket_listener`.
+- **Logic**: Implements a `while True` loop that feeds data into the model, triggering the LLM sentiment extraction, generating state predictions that are JSON-serialized and pushed over WebSocket.
 
-### `TopNav.tsx` (Frontend)
-- **Responsibility**: Master navigation and AI Assistant integration.
-- **Logic**: Contains the search bar which triggers a `fetch` to `/api/chat`. The response from Gemini 1.5 Lite is animated into a floating glass panel using `framer-motion`.
+### `DashboardLayout.tsx` (Frontend)
+- **Responsibility**: 12-column responsive CSS grid organizing multiple visual components.
+- **Logic**: Handles maximized/fullscreen states for widgets, and renders the Asset Tear Sheet (sparklines) and Sentiment panels.
 
-### `PortfolioChart.tsx` (Frontend)
-- **Responsibility**: Renders high-performance financial charts.
-- **Logic**: Uses TradingView's `lightweight-charts` to draw perfectly fluid HTML5 canvas series. It reacts to incoming SSE data from `App.tsx` and updates the series efficiently.
+### `NewsSentimentWidget.tsx` (Frontend)
+- **Responsibility**: Displays live sentiment score and AI reasoning.
+- **Logic**: Receives a `payload` prop from the main WebSocket loop and gracefully animates new headlines into view.
 
-### `AIReasoningPanel.tsx` (Frontend)
-- **Responsibility**: Visualizes the internal state and target weights of the FinRL model.
-- **Logic**: Maps the target weight dictionary into fluid, color-coded progress bars using Tailwind and Framer Motion layout transitions.
+### `GlobalModal.tsx` (Frontend)
+- **Responsibility**: Centralized popup UI.
+- **Logic**: Connected to Zustand store, renders real forms for Trading Preferences, System Alerts, and Profile management without duplicating overlay code.

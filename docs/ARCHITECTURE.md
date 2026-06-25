@@ -5,55 +5,55 @@ This application is built exclusively for Retail AI Trading, utilizing state-of-
 ## Core Components
 
 ### 1. Python Litestar Backend
-- **Framework**: `Litestar` (Chosen for `msgspec` JSON serialization speed and enterprise plugins).
-- **Responsibility**: In-memory PyTorch inference, Alpaca/Yahoo data ingestion, and orchestrating Server-Sent Events (SSE).
-- **Streaming**: Unidirectional SSE (`/api/stream/portfolio`) pushes portfolio weights and prices to the client without TCP Head-of-Line blocking.
+- **Framework**: `Litestar` (Chosen for speed and enterprise plugins).
+- **Responsibility**: In-memory PyTorch inference, Alpaca News ingestion, curl_cffi Yahoo data ingestion, and orchestrating Bidirectional WebSockets.
+- **Streaming**: Bidirectional WebSockets (`/ws/terminal-feed`) pushes portfolio weights, sentiment scores, and prices to the client without TCP Head-of-Line blocking.
 
 ### 2. DRL & AI Engine
-- **Framework**: `FinRL-X` and `PyTorch`
-- **Agent**: Proximal Policy Optimization (PPO) or Elastic Decision Transformers (EDT).
-- **State Vector**: Combines technical indicators, Zero-Shot Time-Series Foundation Models (e.g. TimesFM), and FinGPT financial news sentiment.
-- **Inference**: Loaded globally in Litestar's `on_startup` hook.
+- **Framework**: `stable-baselines3`, `gymnasium`, and `PyTorch`
+- **Agent**: Proximal Policy Optimization (PPO).
+- **Sentiment**: Gemini 1.5 Flash using Structured Outputs (Pydantic) for deterministic numerical extraction from live Alpaca News feeds.
+- **Inference**: Handled in a background thread via `asyncio.to_thread` to prevent event loop blocking.
 
 ### 3. PostgreSQL Database (Supabase)
-- **Role**: Relational store for users, portfolio history, and raw OHLCV ticks.
+- **Role**: (Future Phase) Relational store for users, portfolio history, and raw OHLCV ticks.
 - **Features**: Row Level Security (RLS) and built-in authentication ensuring tenant isolation.
 
 ### 4. React Vite Frontend
 - **Framework**: React 18, Vite, TailwindCSS, Framer Motion.
-- **Charting**: `TradingView Lightweight Charts` utilizing HTML5 Canvas for stutter-free 60fps rendering of large datasets.
-- **Data Fetching**: Native `EventSource` API connecting to Litestar's SSE endpoints.
+- **Charting**: `TradingView Lightweight Charts` utilizing HTML5 Canvas for stutter-free 60fps rendering of large datasets, alongside `recharts` for asset Tear Sheets.
+- **Data Fetching**: Native `WebSocket` API connecting to Litestar.
 
 ## System Diagram
 
 ```mermaid
 graph TD
     subgraph Frontend [React + Vite SPA]
-        UI[Glassmorphic UI]
-        Chart[TradingView Charts]
+        UI[Glassmorphic Dashboard]
+        Chart[Tear Sheet & TV Charts]
     end
 
     subgraph Streaming [Litestar API Gateway]
-        SSE[Server-Sent Events]
+        WS[Bidirectional WebSockets]
         REST[Litestar REST Router]
     end
 
-    subgraph Data [Supabase]
-        PG[(PostgreSQL + RLS)]
-        Auth[Auth & JWT]
-    end
-
     subgraph Intelligence [AI Inference Layer]
-        Model[PyTorch Model]
-        FinRL[FinRL-X Engine]
-        Gemini[Gemini 1.5 Lite API]
+        Model[PyTorch PPO Agent]
+        FinRL[stable-baselines3 Env]
+        Gemini[Gemini Structured Outputs]
     end
 
-    UI -->|HTTPS Requests| REST
-    REST -->|Auth/Data| Auth
-    REST -->|Read/Write| PG
-    REST -->|Business Queries| Gemini
-    SSE -->|Unidirectional SSE Stream| UI
-    Model -->|Portfolio Weights| SSE
-    REST -->|Sync State| FinRL
+    subgraph External [External APIs]
+        Yahoo[Yahoo Finance via curl_cffi]
+        Alpaca[Alpaca News API]
+    end
+
+    UI -->|Socket Connection| WS
+    WS -->|Unidirectional Feed| UI
+    Yahoo -->|OHLCV Data| FinRL
+    Alpaca -->|Raw Headlines| Gemini
+    Gemini -->|Numerical Sentiment| WS
+    FinRL -->|Optimal Weights| Model
+    Model -->|Portfolio State| WS
 ```

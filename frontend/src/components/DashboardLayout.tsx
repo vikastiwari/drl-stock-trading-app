@@ -1,18 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { PortfolioChart } from './PortfolioChart';
 import { AIReasoningPanel } from './AIReasoningPanel';
 import { NewsSentimentWidget } from './NewsSentimentWidget';
 import { Maximize2, Minimize2 } from 'lucide-react';
+import { LineChart, Line, ResponsiveContainer, YAxis } from 'recharts';
 
 interface DashboardLayoutProps {
   chartDataPoint: any;
   targetWeights: any;
   sentimentPayload?: any;
+  pnlStats?: any;
 }
 
-export function DashboardLayout({ chartDataPoint, targetWeights, sentimentPayload }: DashboardLayoutProps) {
+export function DashboardLayout({ chartDataPoint, targetWeights, sentimentPayload, pnlStats }: DashboardLayoutProps) {
   const [fullscreenPanel, setFullscreenPanel] = useState<string | null>(null);
+  const [historicalData, setHistoricalData] = useState<{ [key: string]: any[] }>({});
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      const tickers = ['AAPL', 'MSFT', 'GOOGL', 'AMZN'];
+      const dataMap: any = {};
+      for (const ticker of tickers) {
+        try {
+          const res = await fetch(`http://localhost:8000/api/historical/${ticker}`);
+          const json = await res.json();
+          dataMap[ticker] = json.data;
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      setHistoricalData(dataMap);
+    };
+    fetchHistory();
+  }, []);
 
   const toggleFullscreen = (panel: string) => {
     if (fullscreenPanel === panel) {
@@ -55,7 +76,22 @@ export function DashboardLayout({ chartDataPoint, targetWeights, sentimentPayloa
       {renderPanel(
         'chart', 
         'Live Market', 
-        <div className="p-4 h-full"><PortfolioChart dataPoint={chartDataPoint} /></div>, 
+        <div className="flex flex-col h-full">
+          <div className="px-4 pt-4 pb-2 flex justify-between items-end border-b border-[var(--border-subtle)]/30">
+            <div>
+              <div className="text-sm text-[var(--text-muted)] font-medium mb-1">Portfolio Value &nbsp; | &nbsp; Initial Capital: ${pnlStats?.initial_capital?.toLocaleString() || '100,000'}</div>
+              <div className="text-3xl font-bold text-white">
+                ${pnlStats?.portfolio_value?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '---'}
+              </div>
+            </div>
+            {pnlStats && (
+              <div className={`text-lg font-bold mb-1 ${pnlStats.pnl_dollars >= 0 ? 'text-green-400' : 'text-rose-500'}`}>
+                {pnlStats.pnl_dollars >= 0 ? '+' : ''}${pnlStats.pnl_dollars.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({pnlStats.pnl_percent >= 0 ? '+' : ''}{pnlStats.pnl_percent}%)
+              </div>
+            )}
+          </div>
+          <div className="flex-1 p-4"><PortfolioChart dataPoint={chartDataPoint} /></div>
+        </div>, 
         'col-span-12 lg:col-span-8 row-span-3 lg:row-span-4'
       )}
       
@@ -78,23 +114,35 @@ export function DashboardLayout({ chartDataPoint, targetWeights, sentimentPayloa
         'Asset Tear Sheet', 
         <div className="h-full grid grid-cols-2 md:grid-cols-4 gap-4">
           {['AAPL', 'MSFT', 'GOOGL', 'AMZN'].map((ticker) => (
-            <div key={ticker} className="bg-[var(--bg-dark)] border border-[var(--border-subtle)] rounded flex flex-col p-3">
+            <div key={ticker} className="bg-[var(--bg-dark)] border border-[var(--border-subtle)] rounded flex flex-col p-3 hover:border-[var(--accent-cyan)]/50 transition-colors cursor-pointer group">
               <div className="flex justify-between items-center mb-2">
-                <span className="font-bold text-[var(--text-main)]">{ticker}</span>
-                <span className="text-xs text-[var(--accent-purple)]">
+                <span className="font-bold text-[var(--text-main)] group-hover:text-[var(--accent-cyan)] transition-colors">{ticker}</span>
+                <span className="text-xs font-mono font-bold bg-[var(--accent-purple)]/20 text-[var(--accent-purple)] px-2 py-0.5 rounded">
                   Wgt: {targetWeights ? (targetWeights[ticker] * 100).toFixed(1) : '0.0'}%
                 </span>
               </div>
-              <div className="flex-1 flex items-end">
-                <div className="w-full h-12 flex items-end gap-1">
-                  {[...Array(12)].map((_, i) => (
-                    <div 
-                      key={i} 
-                      className="flex-1 bg-[var(--accent-cyan)] opacity-50 rounded-t"
-                      style={{ height: `${20 + Math.random() * 80}%` }}
-                    ></div>
-                  ))}
-                </div>
+              <div className="flex-1 h-12 w-full mt-1">
+                {historicalData[ticker] ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={historicalData[ticker]}>
+                      <YAxis domain={['dataMin', 'dataMax']} hide />
+                      <Line 
+                        type="monotone" 
+                        dataKey="close" 
+                        stroke="var(--accent-cyan)" 
+                        strokeWidth={2} 
+                        dot={false}
+                        isAnimationActive={false}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="w-full h-full flex items-end gap-1 opacity-20">
+                    {[...Array(12)].map((_, i) => (
+                      <div key={i} className="flex-1 bg-[var(--accent-cyan)] rounded-t" style={{ height: `${20 + Math.random() * 80}%` }}></div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           ))}
