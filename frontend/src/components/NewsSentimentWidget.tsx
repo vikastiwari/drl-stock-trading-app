@@ -16,6 +16,11 @@ interface NewsSentimentWidgetProps {
     score: number;
     reasoning: string;
     headlines: string[];
+    committee?: {
+      fundamental: { score: number; reasoning: string };
+      technical: { score: number; reasoning: string };
+      macro: { score: number; reasoning: string };
+    };
   };
 }
 
@@ -56,29 +61,47 @@ export function NewsSentimentWidget({ payload }: NewsSentimentWidgetProps) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 h-[calc(100%-80px)] overflow-y-auto pr-2 custom-scrollbar">
         <AnimatePresence>
-          {headlines.map((headline: string, idx: number) => (
-            <motion.div 
-              key={idx}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ delay: idx * 0.1 }}
-              className="bg-[var(--bg-dark)] border border-[var(--border-subtle)] rounded-xl p-4 flex flex-col gap-3"
-            >
-              <div className="flex justify-between items-start">
-                <span className="text-xs text-[var(--accent-cyan)] font-mono">Real-Time Source</span>
-                <div className={`px-2 py-0.5 rounded text-xs border ${getSentimentColor(avgSentiment)}`}>
-                  {avgSentiment > 0 ? '+' : ''}{avgSentiment.toFixed(2)}
+          {payload?.committee ? (
+            <>
+              {['fundamental', 'technical', 'macro'].map((agentType, idx) => {
+                const agentData = payload.committee![agentType as keyof typeof payload.committee];
+                return (
+                  <motion.div 
+                    key={agentType}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-[var(--bg-dark)] border border-[var(--border-subtle)] rounded-xl p-4 flex flex-col gap-3"
+                  >
+                    <div className="flex justify-between items-start">
+                      <span className="text-xs text-[var(--accent-cyan)] font-mono uppercase">{agentType} Agent</span>
+                      <div className={`px-2 py-0.5 rounded text-xs border ${getSentimentColor(agentData.score)}`}>
+                        {agentData.score > 0 ? '+' : ''}{agentData.score.toFixed(2)}
+                      </div>
+                    </div>
+                    <h4 className="text-sm font-semibold text-[var(--text-main)] leading-snug">
+                      {agentData.reasoning}
+                    </h4>
+                  </motion.div>
+                );
+              })}
+            </>
+          ) : (
+            headlines.map((headline: string, idx: number) => (
+              <motion.div 
+                key={idx}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ delay: idx * 0.1 }}
+                className="bg-[var(--bg-dark)] border border-[var(--border-subtle)] rounded-xl p-4 flex flex-col gap-3"
+              >
+                <div className="flex justify-between items-start">
+                  <span className="text-xs text-[var(--accent-cyan)] font-mono">Real-Time Source</span>
                 </div>
-              </div>
-              <h4 className="text-sm font-semibold text-[var(--text-main)] leading-snug">{headline}</h4>
-              {idx === 0 && (
-                <p className="text-xs text-[var(--text-muted)] italic border-l-2 border-[var(--border-active)] pl-2">
-                  " {payload?.reasoning} "
-                </p>
-              )}
-            </motion.div>
-          ))}
+                <h4 className="text-sm font-semibold text-[var(--text-main)] leading-snug">{headline}</h4>
+              </motion.div>
+            ))
+          )}
         </AnimatePresence>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { createChart, IChartApi, ISeriesApi, Time } from 'lightweight-charts';
+import { createChart, IChartApi, ISeriesApi, Time, ColorType } from 'lightweight-charts';
 
 interface PortfolioChartProps {
   dataPoint: { time: number; value: number } | null;
@@ -15,8 +15,9 @@ export function PortfolioChart({ dataPoint }: PortfolioChartProps) {
 
     // Initialize TradingView Chart
     const chart = createChart(chartContainerRef.current, {
+      autoSize: true,
       layout: {
-        background: { color: 'transparent' },
+        background: { type: ColorType.Solid, color: 'transparent' },
         textColor: '#94a3b8',
       },
       grid: {
@@ -53,10 +54,26 @@ export function PortfolioChart({ dataPoint }: PortfolioChartProps) {
     };
   }, []);
 
+  const lastTimeRef = useRef<number>(0);
+
   // Update chart when new data arrives
   useEffect(() => {
     if (dataPoint && seriesRef.current) {
-      seriesRef.current.update(dataPoint);
+      try {
+        let safeTime = dataPoint.time;
+        if (safeTime <= lastTimeRef.current) {
+          safeTime = lastTimeRef.current + 1; // Enforce strictly increasing
+        }
+        
+        seriesRef.current.update({
+          time: safeTime as Time,
+          value: dataPoint.value
+        });
+        
+        lastTimeRef.current = safeTime;
+      } catch (err) {
+        console.error('Chart update error:', err);
+      }
     }
   }, [dataPoint]);
 

@@ -9,13 +9,24 @@ try:
 except ImportError:
     HAS_API_LIBS = False
 
+class FundamentalAnalysis(BaseModel):
+    fundamental_score: float = Field(description="Score between -1.0 and 1.0 based on P/E, growth, and news.")
+    fundamental_reasoning: str = Field(description="Reasoning for fundamental score.")
+
+class TechnicalAnalysis(BaseModel):
+    technical_score: float = Field(description="Score between -1.0 and 1.0 based on trend strength, RSI, MACD, and BB.")
+    technical_reasoning: str = Field(description="Reasoning for technical score.")
+
+class MacroAnalysis(BaseModel):
+    macro_score: float = Field(description="Score between -1.0 and 1.0 based on Fed data, Treasury yields, and systemic risk.")
+    macro_reasoning: str = Field(description="Reasoning for macro score.")
+
 class SentimentAnalysisOutput(BaseModel):
-    sentiment_score: float = Field(
-        description="A precise float between -1.0 (highly negative/bearish) and 1.0 (highly positive/bullish)."
-    )
-    analysis_reasoning: str = Field(
-        description="A concise, one-sentence justification explaining the generated score based on the headlines."
-    )
+    sentiment_score: float = Field(description="Final consensus score between -1.0 and +1.0")
+    analysis_reasoning: str = Field(description="Final concise justification")
+    fundamental_breakdown: FundamentalAnalysis
+    technical_breakdown: TechnicalAnalysis
+    macro_breakdown: MacroAnalysis
 
 class AlternativeSentimentEngine:
     def __init__(self):
@@ -54,28 +65,44 @@ class AlternativeSentimentEngine:
             return data
             
         try:
-            # Fetch the 5 most recent articles related to the ticker
+            # 1. Fetch News for Fundamental Agent
             request_parameters = NewsRequest(symbols=target_ticker, limit=5)
             news_payload = self.news_api.get_news(request_parameters)
-            
             extracted_headlines = [article.headline for article in news_payload.news]
             
             if not extracted_headlines:
-                return {
-                    "score": 0.0, 
-                    "reasoning": f"Insufficient recent news volume for {target_ticker}.",
-                    "headlines": []
-                }
+                return self._mock_sentiment(target_ticker)
 
-            # Construct the context prompt
-            inference_prompt = (
-                f"You are a quantitative financial analyst. Assess the current market sentiment "
-                f"for the asset '{target_ticker}' based exclusively on the following recent headlines:\n"
-            )
-            for index, headline in enumerate(extracted_headlines):
-                inference_prompt += f"{index + 1}. {headline}\n"
-                
-            inference_prompt += "\nCalculate an aggregate sentiment score from -1.0 to +1.0."
+            # 2. Mock or fetch Technicals / Macro locally
+            # In production, these would be separate LLM calls. For speed and rate limits,
+            # we will use a single LLM Consensus call that acts as the Committee Orchestrator
+            # by providing it with the raw data for all three vectors.
+            
+            # Fetch real technicals from market_data (using a local fetcher instance to avoid circular imports)
+            from api.market_data import ResilientMarketDataFetcher
+            fetcher = ResilientMarketDataFetcher([target_ticker])
+            tech_data = fetcher.get_technical_indicators(target_ticker)
+            
+            # Construct Committee Prompt
+            inference_prompt = f"""
+You are the Consensus Agent for a Committee of AI Trading Analysts.
+Assess the asset '{target_ticker}'.
+
+FUNDAMENTAL DATA (Recent News):
+{chr(10).join([f'- {h}' for h in extracted_headlines])}
+
+TECHNICAL DATA:
+RSI (14): {tech_data['rsi']}
+MACD Hist: {tech_data['macd_histogram']}
+Bollinger Band Pos: {tech_data['bollinger_band_position']} (0=Lower, 1=Upper)
+
+MACRO DATA:
+Treasury Yields: Stable
+Fed Rate: Pause expected
+Systemic Risk: Moderate
+
+Provide a structured consensus analysis combining the Fundamental, Technical, and Macro perspectives.
+"""
 
             # Execute the LLM call with enforced structured output
             llm_response = self.llm_client.models.generate_content(
@@ -93,14 +120,28 @@ class AlternativeSentimentEngine:
             final_data = {
                 "score": structured_result.sentiment_score,
                 "reasoning": structured_result.analysis_reasoning,
-                "headlines": extracted_headlines
+                "headlines": extracted_headlines,
+                "committee": {
+                    "fundamental": {
+                        "score": structured_result.fundamental_breakdown.fundamental_score,
+                        "reasoning": structured_result.fundamental_breakdown.fundamental_reasoning
+                    },
+                    "technical": {
+                        "score": structured_result.technical_breakdown.technical_score,
+                        "reasoning": structured_result.technical_breakdown.technical_reasoning
+                    },
+                    "macro": {
+                        "score": structured_result.macro_breakdown.macro_score,
+                        "reasoning": structured_result.macro_breakdown.macro_reasoning
+                    }
+                }
             }
             self._cache[target_ticker] = (current_time, final_data)
             return final_data
             
         except Exception as e:
             print(f"Sentiment Engine Error or Rate Limit Hit: {e}")
-            # If rate limited (429), fall back to mock
+            # If rate limited (429) or error, fall back to mock
             data = self._mock_sentiment(target_ticker)
             self._cache[target_ticker] = (current_time, data)
             return data
@@ -120,5 +161,19 @@ class AlternativeSentimentEngine:
         return {
             "score": score,
             "reasoning": f"[MOCK] {reasoning}",
-            "headlines": headlines
+            "headlines": headlines,
+            "committee": {
+                "fundamental": {
+                    "score": round(score + random.uniform(-0.2, 0.2), 2),
+                    "reasoning": "[MOCK] Strong pipeline." if score > 0 else "[MOCK] Supply issues."
+                },
+                "technical": {
+                    "score": round(score + random.uniform(-0.3, 0.3), 2),
+                    "reasoning": "[MOCK] RSI indicates oversold." if score > 0 else "[MOCK] MACD bearish divergence."
+                },
+                "macro": {
+                    "score": round(random.uniform(-0.5, 0.5), 2),
+                    "reasoning": "[MOCK] Interest rates stabilizing."
+                }
+            }
         }

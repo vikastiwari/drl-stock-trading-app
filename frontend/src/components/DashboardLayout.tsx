@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { PortfolioChart } from './PortfolioChart';
 import { AIReasoningPanel } from './AIReasoningPanel';
 import { NewsSentimentWidget } from './NewsSentimentWidget';
-import { Maximize2, Minimize2 } from 'lucide-react';
+import { Maximize2, Minimize2, ExternalLink } from 'lucide-react';
 import { LineChart, Line, ResponsiveContainer, YAxis } from 'recharts';
 
 interface DashboardLayoutProps {
@@ -11,9 +11,10 @@ interface DashboardLayoutProps {
   targetWeights: any;
   sentimentPayload?: any;
   pnlStats?: any;
+  popoutPanel?: string | null;
 }
 
-export function DashboardLayout({ chartDataPoint, targetWeights, sentimentPayload, pnlStats }: DashboardLayoutProps) {
+export function DashboardLayout({ chartDataPoint, targetWeights, sentimentPayload, pnlStats, popoutPanel }: DashboardLayoutProps) {
   const [fullscreenPanel, setFullscreenPanel] = useState<string | null>(null);
   const [historicalData, setHistoricalData] = useState<{ [key: string]: any[] }>({});
 
@@ -43,7 +44,25 @@ export function DashboardLayout({ chartDataPoint, targetWeights, sentimentPayloa
     }
   };
 
+  const openPopout = (panel: string) => {
+    window.open(`/?popout=${panel}`, '_blank', 'width=800,height=600,menubar=no,toolbar=no,location=no,status=no');
+  };
+
   const renderPanel = (id: string, title: string, content: React.ReactNode, defaultClass: string) => {
+    // If we are in popout mode, ONLY render the specified popoutPanel
+    if (popoutPanel) {
+      if (popoutPanel !== id) return null;
+      return (
+        <div className="h-screen w-screen p-4 bg-[var(--bg-dark)] text-white">
+          <div className="glass-panel rounded-xl overflow-hidden relative flex flex-col h-full w-full">
+            <div className="h-full w-full overflow-y-auto custom-scrollbar">
+              {content}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     const isFullscreen = fullscreenPanel === id;
     const isHidden = fullscreenPanel !== null && fullscreenPanel !== id;
 
@@ -57,6 +76,13 @@ export function DashboardLayout({ chartDataPoint, targetWeights, sentimentPayloa
         className={`glass-panel rounded-xl overflow-hidden relative flex flex-col ${isFullscreen ? 'col-span-12 row-span-12 h-[80vh] z-50' : defaultClass}`}
       >
         <div className="absolute top-2 right-2 z-10 flex gap-2 bg-[var(--bg-dark)]/50 backdrop-blur-md p-1 rounded-lg border border-[var(--border-subtle)]">
+          <button 
+            onClick={() => openPopout(id)}
+            className="p-1.5 hover:bg-white/10 rounded-md text-[var(--text-muted)] hover:text-[var(--accent-cyan)] transition-colors"
+            title="Pop out to new window"
+          >
+            <ExternalLink size={14} />
+          </button>
           <button 
             onClick={() => toggleFullscreen(id)}
             className="p-1.5 hover:bg-white/10 rounded-md text-[var(--text-muted)] hover:text-white transition-colors"
@@ -122,7 +148,7 @@ export function DashboardLayout({ chartDataPoint, targetWeights, sentimentPayloa
                 </span>
               </div>
               <div className="flex-1 h-12 w-full mt-1">
-                {historicalData[ticker] ? (
+                {historicalData[ticker] && historicalData[ticker].length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={historicalData[ticker]}>
                       <YAxis domain={['dataMin', 'dataMax']} hide />
