@@ -9,6 +9,7 @@ from backend.ai.inference import DRLPortfolioEngine
 from backend.api.sentiment import AlternativeSentimentEngine
 from backend.api.backtest import AsyncBacktestEngine
 from backend.api.chat import chat_with_gemini
+from backend.api.execution import AlpacaExecutionEngine
 
 # Instantiate the core architecture services globally
 active_universe = ["AAPL", "MSFT", "GOOGL", "AMZN"]
@@ -24,6 +25,15 @@ async def terminal_feed_handler(data: Dict[str, Any], socket: WebSocket) -> None
     The server continuously pushes a synthesized payload of DRL allocations and sentiment.
     """
     focus_asset = data.get("target_asset", "AAPL")
+    api_keys = data.get("apiKeys", {})
+    auto_trade_enabled = api_keys.get("autoTradeEnabled", False)
+    
+    execution_engine = AlpacaExecutionEngine(
+        api_key=api_keys.get("apcaKey"),
+        secret_key=api_keys.get("apcaSecretKey"),
+        paper=True
+    )
+    
     initial_capital = 100000.0
     shares_held = {ticker: 0.0 for ticker in active_universe}
     current_cash = initial_capital
@@ -56,6 +66,10 @@ async def terminal_feed_handler(data: Dict[str, Any], socket: WebSocket) -> None
             pnl_percent = (pnl_dollars / initial_capital) * 100
             
             # 4. Construct the comprehensive update payload
+            execution_logs = []
+            if auto_trade_enabled:
+                execution_logs = await asyncio.to_thread(execution_engine.rebalance_portfolio, target_allocations, current_prices)
+
             terminal_update = {
                 "event_type": "TERMINAL_STATE_UPDATE",
                 "initial_capital": initial_capital,
@@ -63,7 +77,8 @@ async def terminal_feed_handler(data: Dict[str, Any], socket: WebSocket) -> None
                 "pnl_dollars": round(pnl_dollars, 2),
                 "pnl_percent": round(pnl_percent, 2),
                 "portfolio_allocations": target_allocations,
-                "asset_sentiment": sentiment_payload
+                "asset_sentiment": sentiment_payload,
+                "execution_logs": execution_logs
             }
             
             # Broadcast the serialized JSON payload back to the React UI

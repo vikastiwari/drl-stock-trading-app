@@ -24,6 +24,7 @@ interface TerminalState {
       macro: { score: number; reasoning: string };
     };
   };
+  execution_logs?: string[];
 }
 
 function AppContent() {
@@ -34,6 +35,7 @@ function AppContent() {
   const [terminalState, setTerminalState] = useCrossTabState<TerminalState | null>('drl-terminal-state', null);
   const [chartDataPoint, setChartDataPoint] = useCrossTabState<{ time: number; value: number } | null>('drl-chart-data', null);
   const [activeBacktestTicker, setActiveBacktestTicker] = useState<string | null>(null);
+  const { apiKeys } = useStore();
 
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -48,7 +50,7 @@ function AppContent() {
 
     ws.onopen = () => {
       console.log('Connected to Institutional Terminal Feed');
-      ws.send(JSON.stringify({ target_asset: 'AAPL' }));
+      ws.send(JSON.stringify({ target_asset: 'AAPL', apiKeys }));
     };
 
     ws.onmessage = (event) => {
@@ -96,6 +98,7 @@ function AppContent() {
           />
           {!isPopout && (
             <TerminalCLI 
+              executionLogs={terminalState?.execution_logs}
               onCommand={(cmd, args) => {
                 if (cmd === '/backtest' && args.length > 0) {
                   setActiveBacktestTicker(args[0].toUpperCase());

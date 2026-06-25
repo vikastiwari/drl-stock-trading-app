@@ -31,9 +31,20 @@ export const GlobalModal = () => {
               <option value="cyberpunk">Cyberpunk Neon</option>
             </select>
           </div>
-          <div className="p-4 bg-[var(--bg-dark)] border border-[var(--border-subtle)] rounded-xl opacity-50 cursor-not-allowed">
-            <div className="text-base text-[var(--text-main)] font-medium">Auto-Trading (Coming Soon)</div>
-            <div className="text-sm text-[var(--text-muted)]">Allow FinRL model to place live Alpaca orders</div>
+          <div className="flex justify-between items-center p-4 bg-[var(--bg-dark)] border border-[var(--border-subtle)] rounded-xl">
+            <div>
+              <div className="text-base text-[var(--text-main)] font-medium flex items-center gap-2">
+                Live Auto-Trading {apiKeys.autoTradeEnabled && <span className="px-2 py-0.5 rounded text-xs bg-pink-500/20 text-pink-500 font-bold">ACTIVE</span>}
+              </div>
+              <div className="text-sm text-[var(--text-muted)] mt-1">Allow FinRL model to place live Alpaca orders</div>
+            </div>
+            
+            <div 
+              onClick={() => setApiKeys({ ...apiKeys, autoTradeEnabled: !apiKeys.autoTradeEnabled })}
+              className={`w-12 h-6 rounded-full cursor-pointer relative transition-colors duration-300 ${apiKeys.autoTradeEnabled ? 'bg-cyan-500 shadow-[0_0_10px_rgba(0,240,255,0.5)]' : 'bg-[var(--border-active)]'}`}
+            >
+              <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all duration-300 ${apiKeys.autoTradeEnabled ? 'left-7' : 'left-1'}`} />
+            </div>
           </div>
         </div>
       )
@@ -81,9 +92,16 @@ export const GlobalModal = () => {
             </h3>
             <input 
               type="password"
-              placeholder="Enter Alpaca API Key..."
+              placeholder="Enter Alpaca API Key ID..."
               value={apiKeys.apcaKey}
               onChange={(e) => setApiKeys({ ...apiKeys, apcaKey: e.target.value })}
+              className="w-full mt-2 p-2 bg-black/30 border border-[var(--border-subtle)] text-[var(--text-main)] rounded-lg outline-none font-mono text-sm"
+            />
+            <input 
+              type="password"
+              placeholder="Enter Alpaca Secret Key..."
+              value={apiKeys.apcaSecretKey}
+              onChange={(e) => setApiKeys({ ...apiKeys, apcaSecretKey: e.target.value })}
               className="w-full mt-2 p-2 bg-black/30 border border-[var(--border-subtle)] text-[var(--text-main)] rounded-lg outline-none font-mono text-sm"
             />
             <p className="text-xs text-[var(--text-muted)] mt-2">Environment: Paper Trading</p>

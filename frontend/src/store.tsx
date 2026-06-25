@@ -5,8 +5,8 @@ import { supabase } from './supabaseClient';
 interface StoreState {
   theme: string;
   setTheme: (newTheme: string) => void;
-  apiKeys: { apcaKey: string; geminiKey: string };
-  setApiKeys: (keys: { apcaKey: string; geminiKey: string }) => void;
+  apiKeys: { apcaKey: string; apcaSecretKey: string; geminiKey: string; autoTradeEnabled: boolean };
+  setApiKeys: (keys: { apcaKey: string; apcaSecretKey: string; geminiKey: string; autoTradeEnabled: boolean }) => void;
   modalType: string | null;
   isModalOpen: boolean;
   openModal: (type: string) => void;
@@ -20,9 +20,9 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
   const [apiKeys, setApiKeysState] = useState(() => {
     try {
       const keys = localStorage.getItem('apiKeys');
-      return keys ? JSON.parse(keys) : { apcaKey: '', geminiKey: '' };
+      return keys ? JSON.parse(keys) : { apcaKey: '', apcaSecretKey: '', geminiKey: '', autoTradeEnabled: false };
     } catch {
-      return { apcaKey: '', geminiKey: '' };
+      return { apcaKey: '', apcaSecretKey: '', geminiKey: '', autoTradeEnabled: false };
     }
   });
   const [modalType, setModalType] = useState<string | null>(null);
@@ -35,8 +35,13 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
         .then(({ data }) => {
           if (data) {
             if (data.theme) setThemeState(data.theme);
-            if (data.apca_key || data.gemini_key) {
-              setApiKeysState({ apcaKey: data.apca_key || '', geminiKey: data.gemini_key || '' });
+            if (data.apca_key || data.gemini_key || data.apca_secret_key) {
+              setApiKeysState({ 
+                apcaKey: data.apca_key || '', 
+                apcaSecretKey: data.apca_secret_key || '',
+                geminiKey: data.gemini_key || '',
+                autoTradeEnabled: data.auto_trade_enabled || false
+              });
             }
           }
         })
@@ -52,11 +57,17 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const setApiKeys = (keys: { apcaKey: string; geminiKey: string }) => {
+  const setApiKeys = (keys: { apcaKey: string; apcaSecretKey: string; geminiKey: string; autoTradeEnabled: boolean }) => {
     localStorage.setItem('apiKeys', JSON.stringify(keys));
     setApiKeysState(keys);
     if (supabase) {
-      supabase.from('user_settings').upsert({ id: 1, apca_key: keys.apcaKey, gemini_key: keys.geminiKey }).catch(console.error);
+      supabase.from('user_settings').upsert({ 
+        id: 1, 
+        apca_key: keys.apcaKey, 
+        apca_secret_key: keys.apcaSecretKey,
+        gemini_key: keys.geminiKey,
+        auto_trade_enabled: keys.autoTradeEnabled
+      }).catch(console.error);
     }
   };
 

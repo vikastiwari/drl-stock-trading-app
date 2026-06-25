@@ -3,9 +3,10 @@ import { motion } from 'framer-motion';
 
 interface TerminalCLIProps {
   onCommand: (command: string, args: string[]) => void;
+  executionLogs?: string[];
 }
 
-export default function TerminalCLI({ onCommand }: TerminalCLIProps) {
+export default function TerminalCLI({ onCommand, executionLogs }: TerminalCLIProps) {
   const [input, setInput] = useState('');
   const [history, setHistory] = useState<string[]>(['> System initialized.', '> Ready for commands.']);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -15,6 +16,16 @@ export default function TerminalCLI({ onCommand }: TerminalCLIProps) {
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [history]);
+
+  useEffect(() => {
+    if (executionLogs && executionLogs.length > 0) {
+      setHistory(prev => {
+        const newLogs = executionLogs.filter(log => !prev.includes(log));
+        if (newLogs.length > 0) return [...prev, ...newLogs];
+        return prev;
+      });
+    }
+  }, [executionLogs]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && input.trim()) {
@@ -51,7 +62,11 @@ export default function TerminalCLI({ onCommand }: TerminalCLIProps) {
       
       <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-1 pr-2">
         {history.map((line, i) => (
-          <div key={i} className={line.startsWith('Error') ? 'text-red-400' : 'text-[var(--accent-cyan)]'}>
+          <div key={i} className={
+            line.startsWith('Error') ? 'text-red-400' : 
+            line.startsWith('[ALPACA]') ? 'text-pink-400 font-bold bg-pink-500/10 px-1 rounded' : 
+            'text-[var(--accent-cyan)]'
+          }>
             {line}
           </div>
         ))}
